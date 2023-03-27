@@ -8,15 +8,29 @@ program
 program.addOption( 
   new Option( '-p, --path <string>', 'Serial port path' ).makeOptionMandatory() )
 
+
+class ISBD9602 {
+
+}
+
 async function main() {
   
   program.parse();
+
   const opts = program.opts();
 
-  const serialport = new SerialPort({ path: opts.path, baudRate: 19200 })
+  const serialport = new SerialPort({ 
+    path: opts.path, 
+    baudRate: 19200, 
+    autoOpen: true 
+  })
 
-  serialport.write( '\r\nOK\r\n' );
-  serialport.close();
+  serialport.on( 'data', data => {
+    process.stdout.write( data )
+    serialport.write( '\r\nOK\r\n' );
+  })
+  
+  // serialport.close();
 }
 
 main();
