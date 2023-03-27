@@ -25,9 +25,11 @@ async function main() {
     autoOpen: true 
   })
 
-  serialport.on( 'data', data => {
+  serialport.on( 'data', (data: Buffer) => {
     process.stdout.write( data )
-    serialport.write( '\r\nOK\r\n' );
+    if ( data.indexOf( 13 ) ) {
+      serialport.write( '\r\nOK\r\n' );
+    }
   })
   
   // serialport.close();
