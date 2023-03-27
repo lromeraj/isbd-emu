@@ -26,8 +26,8 @@ async function main() {
   })
 
   serialport.on( 'data', (data: Buffer) => {
-    process.stdout.write( data )
-    if ( data.indexOf( 13 ) ) {
+    console.log( data )
+    if ( data.indexOf( 13 ) > -1 ) {
       serialport.write( '\r\nOK\r\n' );
     }
   })
