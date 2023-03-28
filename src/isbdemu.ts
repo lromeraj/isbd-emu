@@ -1,5 +1,8 @@
+import colors from "colors";
+import logger from "./logger";
 import { SerialPort } from "serialport"
 import { Argument, Command, Option, program } from "commander";
+import { ATCmd, ATInterface } from "./at";
 
 program
   .version( '0.0.1' )
@@ -7,11 +10,6 @@ program
 
 program.addOption( 
   new Option( '-p, --path <string>', 'Serial port path' ).makeOptionMandatory() )
-
-
-class ISBD9602 {
-
-}
 
 async function main() {
   
@@ -25,19 +23,38 @@ async function main() {
     autoOpen: true 
   })
 
-  serialport.on( 'data', (data: Buffer) => {
-    
-    /*
-    data.forEach( b => {
-      console.log( b );
-    })
-    */
-    if ( data.indexOf( 13 ) > -1 ) {
-      serialport.write( Buffer.from( '\r\nOK\r\n' ) );
-    }
+  const atIface = new ATInterface( serialport );
+
+  const quiteCmd = new ATCmd( /^q[01]{0,1}$/i, ( at, match ) => {
+    return ATCmd.Status.AT_OK;
   })
-  
-  // serialport.close();
+
+  const echoCmd = new ATCmd( /^e([01]){0,1}$/i, ( at, match ) => {
+    at.setEcho( match[ 1 ] 
+      ? Boolean( parseInt( match[ 1 ] ) ) 
+      : true )
+    return ATCmd.Status.AT_OK;
+  })
+
+  const verboseCmd = new ATCmd( /^v([01]){0,1}$/i, ( at, match ) => {
+    at.setVerbose( match[ 1 ] 
+      ? Boolean( parseInt( match[ 1 ] ) ) 
+      : true )
+    return ATCmd.Status.AT_OK;
+  })
+
+  const imeiCmd = new ATCmd( /^\+cgsn/i, ( at, match ) => {
+    at.writeLine( "23523512363263" );
+    return ATCmd.Status.AT_OK;
+  })
+
+  atIface.registerCommands([
+    quiteCmd,
+    echoCmd,
+    imeiCmd,
+    verboseCmd
+  ])
+
 }
 
 main();

@@ -15,8 +15,10 @@
   "author": "@lromeraj",
   "license": "ISC",
   "dependencies": {
+    "colors": "^1.4.0",
     "commander": "^10.0.0",
     "serialport": "^10.5.0",
-    "typescript": "^5.0.2"
+    "typescript": "^5.0.2",
+    "winston": "^3.8.2"
   }
 }
