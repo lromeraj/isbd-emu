@@ -19,8 +19,8 @@ async function main() {
 
   const serialport = new SerialPort({ 
     path: opts.path, 
-    baudRate: 19200, 
-    autoOpen: true 
+    baudRate: 19200,
+    autoOpen: true,
   })
 
   const atIface = new ATInterface( serialport );
@@ -43,14 +43,34 @@ async function main() {
     return ATCmd.Status.AT_OK;
   })
 
-  const imeiCmd = new ATCmd( /^\+cgsn/i, ( at, match ) => {
-    at.writeLine( "23523512363263" );
+  const flowControlCmd = new ATCmd( /^\&k([03]){0,1}$/i, ( at, match ) => {
+    
+    const opt = match[ 1 ] 
+      ? parseInt( match[ 1 ] ) 
+      : 3;
+    
+    at.setFlowControl( opt === 3 );
+
+    return ATCmd.Status.AT_OK;
+  })
+
+  const dtrCmd = new ATCmd( /^\&d([0-3]){0,1}/i, ( at, match ) => {
+    const opt = match[ 1 ] 
+      ? parseInt( match[ 1 ] ) 
+      : 2;
+    return ATCmd.Status.AT_OK;
+  })
+
+  const imeiCmd = new ATCmd( /^\+cgsn$/i, ( at, match ) => {
+    at.writeLine( "527695889002193" );
     return ATCmd.Status.AT_OK;
   })
 
   atIface.registerCommands([
     quiteCmd,
     echoCmd,
+    dtrCmd,
+    flowControlCmd,
     imeiCmd,
     verboseCmd
   ])
