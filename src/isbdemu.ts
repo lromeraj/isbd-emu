@@ -23,7 +23,16 @@ async function main() {
     autoOpen: true,
   })
 
+  serialport.on( 'error', err => {
+    logger.error( err.message )
+    process.exit( 1 );
+  })
+
   const atIface = new ATInterface( serialport );
+
+  const atCmd = new ATCmd( /^$/i, ( at, match ) => {
+    return ATCmd.Status.AT_OK;
+  })
 
   const quiteCmd = new ATCmd( /^q[01]{0,1}$/i, ( at, match ) => {
     return ATCmd.Status.AT_OK;
@@ -67,6 +76,7 @@ async function main() {
   })
 
   atIface.registerCommands([
+    atCmd,
     quiteCmd,
     echoCmd,
     dtrCmd,
