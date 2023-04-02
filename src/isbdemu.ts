@@ -42,8 +42,8 @@ async function main() {
   }
 
   let mtData = {
-    checksum: 0,
-    buffer: Buffer.from([]),
+    checksum: 10,
+    buffer: Buffer.from([0xFF, 0xFF, 0xFF, 0xFF]),
   }
 
   const atInterface = new ATInterface( serialport );
@@ -117,14 +117,16 @@ async function main() {
     offset = buffer.writeUint16BE( 
       mtData.buffer.length, offset );
     
-    offset = buffer.copy( 
-      mtData.buffer, offset );
+    // copy() do not returns an offset, returns the
+    // number of bytes copied
+    offset += mtData.buffer.copy( 
+      buffer, offset );
     
     offset = buffer.writeUInt16BE( 
       mtData.checksum, offset );
-    
+
     at.writeRaw( buffer );
-    
+
     return ATCmd.Status.OK;
   })
 
