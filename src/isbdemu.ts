@@ -92,6 +92,40 @@ async function main() {
     at.writeLine( opts.imei );
     return ATCmd.Status.OK;
   })
+  
+  /**
+   * Transfer mobile terminated originated buffer 
+   * to mobile terminated buffer
+   */
+  const CMD_SBDTC = new ATCmd( /^\+sbdtc$/i, async ( at, match ) => {
+    mtData = { ... moData };
+    return ATCmd.Status.OK;
+  })
+
+  /**
+   * Read mobile terminated buffer
+   */
+  const CMD_SBDRB = new ATCmd( /^\+sbdrb$/i, async ( at, match ) => {
+    
+    // LENGTH (2 bytes) + MESSAGE (LENGTH bytes) + CHECKSUM (2 bytes)
+
+    let offset = 0;
+    const totalLength = 2 + mtData.buffer.length + 2;
+    const buffer = Buffer.alloc( totalLength );
+
+    offset = buffer.writeUint16BE( 
+      mtData.buffer.length, offset );
+    
+    offset = buffer.copy( 
+      mtData.buffer, offset );
+    
+    offset = buffer.writeUInt16BE( 
+      mtData.checksum, offset );
+    
+    at.writeRaw( buffer );
+    
+    return ATCmd.Status.OK;
+  })
 
   const CMD_SBDWB = new ATCmd( /^\+sbdwb=([0-9]){1,3}$/i, ( at, match ) => {
 
@@ -137,6 +171,8 @@ async function main() {
     CMD_IMEI,
     CMD_VERBOSE,
     CMD_SBDWB,
+    CMD_SBDTC,
+    CMD_SBDRB,
   ])
 
 }
