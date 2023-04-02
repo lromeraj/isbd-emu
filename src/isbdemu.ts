@@ -70,7 +70,7 @@ async function main() {
     return ATCmd.Status.OK;
   })
 
-  const CMD_FLOW_CONTROL = new ATCmd( /^\kd([03]?)$/i, async ( at, match ) => {
+  const CMD_FLOW_CONTROL = new ATCmd( /^\&k([03]?)$/i, async ( at, match ) => {
     
     const opt = match[ 1 ] 
       ? parseInt( match[ 1 ] ) 
