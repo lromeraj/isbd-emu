@@ -70,7 +70,7 @@ async function main() {
     return ATCmd.Status.OK;
   })
 
-  const CMD_FLOW_CONTROL = new ATCmd( /^\&k([03]){0,1}$/i, async ( at, match ) => {
+  const CMD_FLOW_CONTROL = new ATCmd( /^\kd([03]?)$/i, async ( at, match ) => {
     
     const opt = match[ 1 ] 
       ? parseInt( match[ 1 ] ) 
@@ -81,10 +81,11 @@ async function main() {
     return ATCmd.Status.OK;
   })
 
-  const CMD_DTR = new ATCmd( /^\&d([0-3]){0,1}/i, async ( at, match ) => {
-    const opt = match[ 1 ] 
+  const CMD_DTR = new ATCmd( /^\&d([0-3]?)$/i, async ( at, match ) => {
+    const opt = match[ 1 ]
       ? parseInt( match[ 1 ] ) 
       : 2;
+    // set flow control accordingly
     return ATCmd.Status.OK;
   })
 
@@ -127,7 +128,7 @@ async function main() {
     return ATCmd.Status.OK;
   })
 
-  const CMD_SBDWB = new ATCmd( /^\+sbdwb=([0-9]){1,3}$/i, ( at, match ) => {
+  const CMD_SBDWB = new ATCmd( /^\+sbdwb=(\d+)$/i, ( at, match ) => {
 
     const payloadLength = parseInt( match[ 1 ] )
 
