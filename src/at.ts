@@ -1,4 +1,4 @@
-import colors from "colors";
+import colors, { underline } from "colors";
 import logger from "./logger";
 import { SerialPort } from "serialport";
 import EventEmitter from "events";
@@ -111,20 +111,21 @@ export class ATInterface extends EventEmitter {
 
     this.status = ATIStatus.PROCESSING;
 
-    let atCmdStrFiltered = atCmdStr.replace( /^AT|\r$/ig, '' );
+    let atCmdStrFiltered = atCmdStr.replace( /\r$/ig, '' );
 
     logger.debug( `Processing command ${ 
-      colors.green( atCmdStr.slice( 0, 2 ) + atCmdStrFiltered ) 
+      colors.green( atCmdStrFiltered ) 
     } ...` )
 
     for ( let cmd of this.commands ) {
-      const promise = cmd.test( this, atCmdStrFiltered )
+      const promise = cmd.test( this, atCmdStrFiltered );
+
       if ( promise ) {
         promise.then( sts => {
           this.writeStatus( sts );
         }).catch( err => {
+          // TODO: write AT error response ????
           logger.error( `Internal command error => ${ err.stack }` )
-          // TODO: write at error response ????
         }).finally(() => {
           this.status = ATIStatus.WAITING;
         })
@@ -172,7 +173,7 @@ export class ATInterface extends EventEmitter {
     }
   }
   
-  readBytes( n: number, timeout: number = 1000 ): Promise<Buffer> {
+  readBytes( n: number, timeout: number ): Promise<Buffer> {
 
     return new Promise( ( resolve, reject ) => {
 
@@ -197,7 +198,8 @@ export class ATInterface extends EventEmitter {
   }
 
   writeLine( line: string ) {
-    this.writeRaw( Buffer.from( this.getLineStart() + line + this.getLineEnd() ) )
+    this.writeRaw( Buffer.from( 
+      this.getLineStart() + line + this.getLineEnd() ) )
   }
 
   writeStatus( sts: ATCmd.Status ) {
@@ -220,20 +222,87 @@ export class ATInterface extends EventEmitter {
 
 export class ATCmd {
 
+  private name: string;
   private regExp: RegExp;
-  private cmdHandler: ATCmd.Handler;
+  
+  private cmdHandlers: { 
+    onTest?: { handler: ATCmd.Handler },
+    onRead?: { handler: ATCmd.Handler },
+    onSet?: { regexp: RegExp, handler: ATCmd.Handler },
+    onExec?: { regexp?: RegExp, handler: ATCmd.Handler },
+  } = { }
 
-  constructor( regExp: RegExp, cmdHandler: ATCmd.Handler ) {
-    this.regExp = regExp;
-    this.cmdHandler = cmdHandler;
+  constructor( name?: string ) {
+    
+    this.name = name || '';
+
+    this.regExp = new RegExp( `^(at${
+      this.name.replace( /[/$&*+]/g, '\\$&' ) 
+    })(\\=\\?|\\=|\\?)?(.*)$`, 'i' );
+
   }
 
-  test( at: ATInterface, cmdStr: string ): null | Promise<ATCmd.Status> {
+  test( at: ATInterface, cmdStr: string ): undefined | Promise<ATCmd.Status> {
+
+    console.log( this.regExp )
     const match = cmdStr.match( this.regExp )
+    
     if ( match ) {
-      return this.cmdHandler( at, match );
+
+      const [ _, _name, type, params ] = match;
+      
+      if ( type === '?' && this.cmdHandlers.onRead ) {
+        return this.cmdHandlers.onRead.handler( at, [] );
+      } else if ( type === '=?' && this.cmdHandlers.onTest ) {
+        return this.cmdHandlers.onTest.handler( at, [] );
+      } else if ( type === '=' && this.cmdHandlers.onSet ) {
+        const match = params.match( this.cmdHandlers.onSet.regexp );
+        return match 
+          ? this.cmdHandlers.onSet.handler( at, match ) 
+          : undefined; 
+      } else if ( type === undefined && this.cmdHandlers.onExec ) {
+
+        if ( this.cmdHandlers.onExec.regexp ) {
+          
+          const match = params.match( this.cmdHandlers.onExec.regexp );
+          return match
+            ? this.cmdHandlers.onExec.handler( at, match )
+            : undefined;
+
+        } else {
+          return this.cmdHandlers.onExec.handler( at, [] );
+        }
+
+      } else {
+        return undefined;
+      }
+
     }
-    return null;
+
+    return undefined;
+  }
+
+  onExec( regexp: RegExp | null, handler: ATCmd.Handler ) {
+    this.cmdHandlers.onExec = { 
+      handler,
+      regexp: regexp || undefined, 
+    };
+    return this;
+  }
+
+  onRead( handler: ATCmd.Handler ) {
+    this.cmdHandlers.onRead = { handler };
+    return this;
+  }
+
+  onSet( regexp: RegExp, handler: ATCmd.Handler ) {
+    this.cmdHandlers.onSet = { regexp, handler };
+    return this;
+  }
+
+  onTest( handler: ATCmd.Handler ) {
+    this.cmdHandlers.onTest = { handler };
+    return this;
   }
 
 }
@@ -246,5 +315,6 @@ export namespace ATCmd {
     UNK,
   };
   
-  export type Handler = ( at: ATInterface, str: string[] ) => Promise<Status>
+  export type Handler = ( at: ATInterface, match: string[] ) => Promise<Status>
+
 }
