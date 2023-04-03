@@ -5,7 +5,7 @@
   "main": "index.js",
   "scripts": {
     "build": "npm i && rm -rf build/ && tsc",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "jest"
   },
   "keywords": [
     "iridium",
@@ -17,6 +17,7 @@
   "dependencies": {
     "colors": "^1.4.0",
     "commander": "^10.0.0",
+    "jest": "^29.5.0",
     "serialport": "^10.5.0",
     "typescript": "^5.0.2",
     "winston": "^3.8.2"

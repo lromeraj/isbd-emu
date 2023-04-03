@@ -15,6 +15,8 @@ export function checkMBCS( payload: Buffer, expectedChecksum: number ): boolean 
   return expectedChecksum === ( payloadChecksum & 0xFFFF ); 
 }
 
+// TODO: function computeChecksum() { }
+
 /**
  * 
  * @param at 
