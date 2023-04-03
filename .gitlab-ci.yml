@@ -19,4 +19,4 @@ test:
     - isbd-emulator
   only:
     - dev
-    - master
+    - main
