@@ -2,7 +2,7 @@ import { SerialPort } from 'serialport';
 import { ATCmd, ATInterface } from '../at';
 
 describe('ATCmd module', () => {
-  
+
   const sp = new SerialPort({
     path: '/dev/null',
     baudRate: 19200,
@@ -16,6 +16,7 @@ describe('ATCmd module', () => {
     const cmd = new ATCmd()
       .onExec( null, async () => { })
 
+    expect( cmd.test( atInterface, 'a' ) ).toBeUndefined()
     expect( cmd.test( atInterface, 'at' ) ).toBeTruthy()
     expect( cmd.test( atInterface, 'ate' ) ).toBeUndefined()
 
