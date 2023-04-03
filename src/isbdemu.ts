@@ -52,23 +52,20 @@ async function main() {
 
   const CMD_QUIET = new ATCmd( 'q' )
     .onExec( /[01]?/, async ( at, match ) => {
-
       return ATCmd.Status.OK;
     })
 
   const CMD_ECHO = new ATCmd( 'e' )
     .onExec( /[01]?/, async ( at, match ) => {
-      at.setEcho( match[ 0 ] 
-        ? Boolean( parseInt( match[ 1 ] ) ) 
-        : true )
+      at.setEcho( 
+        Boolean( parseInt( match[ 0 ] ) ) )
       return ATCmd.Status.OK;
     })
 
   const CMD_VERBOSE = new ATCmd( 'v' )
     .onExec( /[01]?/i, async ( at, match ) => {
-      at.setVerbose( match[ 0 ] 
-        ? Boolean( parseInt( match[ 1 ] ) ) 
-        : true )
+      at.setVerbose( 
+        Boolean( parseInt( match[ 0 ] ) ) )
       return ATCmd.Status.OK;
     })
 

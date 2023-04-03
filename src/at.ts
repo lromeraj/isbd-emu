@@ -215,7 +215,7 @@ export class ATInterface extends EventEmitter {
   }
 
   registerCommands( atCmds: ATCmd[] ) {
-    this.commands.push( ...atCmds );
+    this.commands.push( ... atCmds );
   }
 
 }
@@ -236,41 +236,45 @@ export class ATCmd {
     
     this.name = name || '';
 
-    this.regExp = new RegExp( `^(at${
-      this.name.replace( /[/$&*+]/g, '\\$&' ) 
-    })(\\=\\?|\\=|\\?)?(.*)$`, 'i' );
+    if ( !this.name ) {
+      this.regExp = /^(at)?$/i
+    } else {
+      this.regExp = new RegExp( `^(at${
+        this.name.replace( /[/$&*+]/g, '\\$&' )
+      })(\\=\\?|\\=|\\?)?(.*)$`, 'i' );
+    }
 
   }
 
   test( at: ATInterface, cmdStr: string ): undefined | Promise<ATCmd.Status> {
 
-    console.log( this.regExp )
     const match = cmdStr.match( this.regExp )
     
     if ( match ) {
 
+      const cmdHandlers = this.cmdHandlers;
       const [ _, _name, type, params ] = match;
-      
-      if ( type === '?' && this.cmdHandlers.onRead ) {
-        return this.cmdHandlers.onRead.handler( at, [] );
-      } else if ( type === '=?' && this.cmdHandlers.onTest ) {
-        return this.cmdHandlers.onTest.handler( at, [] );
-      } else if ( type === '=' && this.cmdHandlers.onSet ) {
-        const match = params.match( this.cmdHandlers.onSet.regexp );
-        return match 
-          ? this.cmdHandlers.onSet.handler( at, match ) 
-          : undefined; 
-      } else if ( type === undefined && this.cmdHandlers.onExec ) {
 
-        if ( this.cmdHandlers.onExec.regexp ) {
+      if ( type === '?' && cmdHandlers.onRead ) {
+        return cmdHandlers.onRead.handler( at, [] );
+      } else if ( type === '=?' && cmdHandlers.onTest ) {
+        return cmdHandlers.onTest.handler( at, [] );
+      } else if ( type === '=' && cmdHandlers.onSet ) {
+        const match = params.match( cmdHandlers.onSet.regexp );
+        return match 
+          ? cmdHandlers.onSet.handler( at, match ) 
+          : undefined; 
+      } else if ( type === undefined && cmdHandlers.onExec ) {
+
+        if ( cmdHandlers.onExec.regexp ) {
           
-          const match = params.match( this.cmdHandlers.onExec.regexp );
+          const match = params.match( cmdHandlers.onExec.regexp );
           return match
-            ? this.cmdHandlers.onExec.handler( at, match )
+            ? cmdHandlers.onExec.handler( at, match )
             : undefined;
 
         } else {
-          return this.cmdHandlers.onExec.handler( at, [] );
+          return cmdHandlers.onExec.handler( at, [] );
         }
 
       } else {
