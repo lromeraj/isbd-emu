@@ -118,11 +118,17 @@ export class ATInterface extends EventEmitter {
     } ...` )
 
     for ( let cmd of this.commands ) {
+
       const promise = cmd.test( this, atCmdStrFiltered );
 
       if ( promise ) {
-        promise.then( sts => {
-          this.writeStatus( sts );
+        promise.then( () => {
+          // ! We could allow to commands to
+          // ! return a status code but this should not be necessary
+          // ! If the command was tested means that everything was OK
+          // ! at the AT interface layer
+          this.writeStatus( ATCmd.Status.OK );
+          
         }).catch( err => {
           // TODO: write AT error response ????
           logger.error( `Internal command error => ${ err.stack }` )
@@ -202,20 +208,20 @@ export class ATInterface extends EventEmitter {
       this.getLineStart() + line + this.getLineEnd() ) )
   }
 
-  writeStatus( sts: ATCmd.Status ) {
-    if ( sts === ATCmd.Status.OK ) {
-      this.writeLine( this.verbose ? 'OK' : '0' );
-    } else {
-      this.writeLine( this.verbose ? 'ERROR' : '4' );
-    }
-  }
-
   registerCommand( atCmd: ATCmd ) {
     this.commands.push( atCmd );
   }
 
   registerCommands( atCmds: ATCmd[] ) {
     this.commands.push( ... atCmds );
+  }
+
+  private writeStatus( sts: ATCmd.Status ) {
+    if ( sts === ATCmd.Status.OK ) {
+      this.writeLine( this.verbose ? 'OK' : '0' );
+    } else {
+      this.writeLine( this.verbose ? 'ERROR' : '4' );
+    }
   }
 
 }
@@ -246,7 +252,7 @@ export class ATCmd {
 
   }
 
-  test( at: ATInterface, cmdStr: string ): undefined | Promise<ATCmd.Status> {
+  test( at: ATInterface, cmdStr: string ): undefined | Promise<void> {
 
     const match = cmdStr.match( this.regExp )
     
@@ -260,10 +266,12 @@ export class ATCmd {
       } else if ( type === '=?' && cmdHandlers.onTest ) {
         return cmdHandlers.onTest.handler( at, [] );
       } else if ( type === '=' && cmdHandlers.onSet ) {
+        
         const match = params.match( cmdHandlers.onSet.regexp );
         return match 
           ? cmdHandlers.onSet.handler( at, match ) 
           : undefined; 
+
       } else if ( type === undefined && cmdHandlers.onExec ) {
 
         if ( cmdHandlers.onExec.regexp ) {
@@ -277,8 +285,6 @@ export class ATCmd {
           return cmdHandlers.onExec.handler( at, [] );
         }
 
-      } else {
-        return undefined;
       }
 
     }
@@ -319,6 +325,6 @@ export namespace ATCmd {
     UNK,
   };
   
-  export type Handler = ( at: ATInterface, match: string[] ) => Promise<Status>
+  export type Handler = ( at: ATInterface, match: string[] ) => Promise<void>
 
 }

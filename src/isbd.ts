@@ -1,5 +1,13 @@
 import { ATInterface } from "./at";
 
+export function computeMsgChecksum( message: Buffer ) {
+  let payloadChecksum = 0;
+  for ( let i = 0; i < message.length; i++ ) {
+    payloadChecksum += message[ i ];
+  }
+  return ( payloadChecksum & 0xFFFF );
+}
+
 /**
  * Checks if the given mobile buffer checksum is valid
  * 
@@ -7,15 +15,9 @@ import { ATInterface } from "./at";
  * @param payloadLength The length of the payload (excluding checksum)
  * @returns Checksum validity
  */
-export function checkMBCS( payload: Buffer, expectedChecksum: number ): boolean {
-  let payloadChecksum = 0;
-  for ( let i = 0; i < payload.length; i++ ) {
-    payloadChecksum += payload[ i ];
-  }
-  return expectedChecksum === ( payloadChecksum & 0xFFFF ); 
+export function validateMsg( message: Buffer, expectedChecksum: number ): boolean {
+  return expectedChecksum === computeMsgChecksum( message ); 
 }
-
-// TODO: function computeChecksum() { }
 
 /**
  * 
@@ -23,7 +25,7 @@ export function checkMBCS( payload: Buffer, expectedChecksum: number ): boolean 
  * @param payloadLength 
  * @returns 
  */
-export function readMB( at: ATInterface, payloadLength: number ): Promise<{
+export function readBinMsg( at: ATInterface, payloadLength: number ): Promise<{
   payload: Buffer,
   checksum: number,
 }> {

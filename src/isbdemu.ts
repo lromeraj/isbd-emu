@@ -3,7 +3,7 @@ import logger from "./logger";
 import { SerialPort } from "serialport"
 import { Argument, Command, Option, program } from "commander";
 import { ATCmd, ATInterface } from "./at";
-import { checkMBCS as validateChecksum, readMB as readBinaryMsg } from "./isbd";
+import { validateMsg, readBinMsg } from "./isbd";
 
 program
   .version( '0.0.2' )
@@ -48,52 +48,37 @@ async function main() {
   const atInterface = new ATInterface( serialport );
 
   const CMD_AT = new ATCmd()
-    .onExec( null, async () => ATCmd.Status.OK );
+    .onExec( null, async at => { });
 
   const CMD_QUIET = new ATCmd( 'q' )
-    .onExec( /[01]?/, async ( at, match ) => {
-      return ATCmd.Status.OK;
-    })
+    .onExec( /[01]?/, async ( at, match ) => { })
 
   const CMD_ECHO = new ATCmd( 'e' )
     .onExec( /[01]?/, async ( at, match ) => {
       at.setEcho( 
-        Boolean( parseInt( match[ 0 ] ) ) )
-      return ATCmd.Status.OK;
+        Boolean( parseInt( match[ 0 ] || '1' ) ) )
     })
 
   const CMD_VERBOSE = new ATCmd( 'v' )
     .onExec( /[01]?/i, async ( at, match ) => {
       at.setVerbose( 
-        Boolean( parseInt( match[ 0 ] ) ) )
-      return ATCmd.Status.OK;
+        Boolean( parseInt( match[ 0 ] || '1' ) ) )
     })
 
   const CMD_FLOW_CONTROL = new ATCmd( '&k' )
-    .onExec( /[03]?/, async ( at, match ) => {
-    
-      const opt = match[ 0 ] 
-        ? parseInt( match[ 0 ] ) 
-        : 3;
-      
+    .onExec( /[03]?/, async ( at, match ) => { 
+      const opt = parseInt( match[ 0 ] || '3' );
       at.setFlowControl( opt === 3 );
-
-      return ATCmd.Status.OK;
     })
 
   const CMD_DTR = new ATCmd( '&d' )
     .onExec( /[0-3]?/, async ( at, match ) => {
-      const opt = match[ 0 ]
-        ? parseInt( match[ 0 ] ) 
-        : 2;
-      // set flow control accordingly
-      return ATCmd.Status.OK;
+      const opt = parseInt( match[ 0 ] || '2' ) 
     })
 
   const CMD_IMEI = new ATCmd( '+cgsn' )
     .onExec( null, async at => {
       at.writeLine( opts.imei );
-      return ATCmd.Status.OK;
     })
   
   /**
@@ -103,7 +88,6 @@ async function main() {
   const CMD_SBDTC = new ATCmd( '+sbdtc' )
     .onExec( null, async ( at, match ) => {
       mtData = { ... moData };
-      return ATCmd.Status.OK;
     })
 
   /**
@@ -112,10 +96,11 @@ async function main() {
   const CMD_SBDRB = new ATCmd( '+sbdrb' )
     .onExec( null, async at => {
       
-      // LENGTH (2 bytes) + MESSAGE (LENGTH bytes) + CHECKSUM (2 bytes)
-
       let offset = 0;
+
+      // LENGTH (2 bytes) + MESSAGE (LENGTH bytes) + CHECKSUM (2 bytes)
       const totalLength = 2 + mtData.buffer.length + 2;
+
       const buffer = Buffer.alloc( totalLength );
 
       offset = buffer.writeUint16BE( 
@@ -131,11 +116,10 @@ async function main() {
 
       at.writeRaw( buffer );
 
-      return ATCmd.Status.OK;
     })
 
   const CMD_SBDWB = new ATCmd( '+sbdwb' )
-    .onSet( /\d+/, ( at, match ) => {
+    .onSet( /\d+/, async ( at, match ) => {
       
       const code = {
         OK            : '0', // everything was ok
@@ -143,7 +127,7 @@ async function main() {
         ERR_CHECKSUM  : '2', // received checksum is not valid
         ERR_LENGTH    : '3', // message length is out of bounds [1, 340]
       };
-
+      
       const payloadLength = parseInt( match[ 0 ] )
 
       if ( payloadLength < 1 || payloadLength > 340 ) {
@@ -151,11 +135,11 @@ async function main() {
       } else {
 
         at.writeLine( 'READY' );
-
-        return readBinaryMsg( at, payloadLength )
+      
+        return readBinMsg( at, payloadLength )
           .then( ({ payload, checksum }) => {
 
-          if ( validateChecksum( payload, checksum ) ) { // message is valid
+          if ( validateMsg( payload, checksum ) ) { // message is valid
           
             moData.buffer = payload;
             moData.checksum = checksum;
@@ -166,16 +150,12 @@ async function main() {
             at.writeLine( code.ERR_CHECKSUM );
           }
 
-          return ATCmd.Status.OK;
-
         }).catch( err => { // timeout error
           at.writeLine( code.ERR_TIMEOUT );
-          return ATCmd.Status.OK;
         })
 
       }
 
-      return Promise.resolve( ATCmd.Status.OK );
     })
 
   atInterface.registerCommands([
