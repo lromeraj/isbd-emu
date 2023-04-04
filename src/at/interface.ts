@@ -11,11 +11,10 @@ enum ATIStatus {
   PROCESSING,
 };
 
-export class ATInterface<CmdCtxType = null> {
+export class ATInterface {
 
   private sp: SerialPort;
-  private context: CmdCtxType; 
-  private commands: ATCmd<CmdCtxType>[] = [];
+  private commands: ATCmd<any>[] = [];
   private status: ATIStatus = ATIStatus.WAITING;
 
   private echo: boolean = false;
@@ -32,10 +31,9 @@ export class ATInterface<CmdCtxType = null> {
     callback: ( buffer: Buffer ) => void,
   }[] = []
 
-  constructor( sp: SerialPort, context: CmdCtxType ) {
+  constructor( sp: SerialPort ) {
     
     this.sp = sp;
-    this.context = context;
 
     this.sp.on( 'data', ( buffer: Buffer ) => {
 
@@ -126,7 +124,7 @@ export class ATInterface<CmdCtxType = null> {
 
     for ( let cmd of this.commands ) {
 
-      const promise = cmd.test( this, atCmdStrFiltered, this.context );
+      const promise = cmd.test( this, atCmdStrFiltered );
 
       if ( promise ) {
         
@@ -227,12 +225,20 @@ export class ATInterface<CmdCtxType = null> {
       this.getLineStart() + line + this.getLineEnd() ) )
   }
 
-  registerCommand( atCmd: ATCmd<CmdCtxType> ) {
-    this.commands.push( atCmd );
+  registerCommand<T>( atCmd: ATCmd<T> | ( (cmd: T) => ATCmd<T> ), context?: T ) {
+    if ( typeof atCmd === 'function' && context ) {
+      this.commands.push( atCmd( context ) );
+    } else if ( atCmd instanceof ATCmd ) {
+      this.commands.push( atCmd );
+    }
   }
 
-  registerCommands( atCmds: ATCmd<CmdCtxType>[] ) {
-    this.commands.push( ... atCmds );
+  registerCommands<T>( atCmds: ATCmd<T>[] ): void;
+  registerCommands<T>( atCmds: ((cmd: T) => ATCmd<T> )[], context: T ): void;
+  registerCommands<T>( atCmds: (ATCmd<T> | ( (cmd: T) => ATCmd<T> ))[], context?: T ): void {
+    atCmds.forEach( atCmd => {
+      this.registerCommand( atCmd, context );
+    })
   }
 
   private writeStatus( sts: ATCmd.Status ) {

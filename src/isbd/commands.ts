@@ -1,28 +1,32 @@
 import { ATCmd } from "../at/cmd"
 import { Modem, readMB, validateMB } from "./modem";
 
-export const CMD_CGSN = new ATCmd<Modem>( '+cgsn' )
-  .onExec( null, async function( at ) {
+
+export const CMD_CGSN = ATCmd.wrapContext<Modem>( '+cgsn', cmd => {
+  cmd.onExec( null, async function( at ) {
     at.writeLine( this.imei );
   })
+})
+  
 
 /**
  * Transfer mobile terminated originated buffer 
  * to mobile terminated buffer
  */
-export const CMD_SBDTC = new ATCmd<Modem>( '+sbdtc' )
-  .onExec( null, async function( modem ) {
+export const CMD_SBDTC = ATCmd.wrapContext<Modem>( '+sbdtc', cmd => {
+  cmd.onExec( null, async function( at ) {
     this.mtBuffer = { ... this.moBuffer };
   })
+})
 
 /**
  * Read mobile terminated buffer
  */
-export const CMD_SBDRB = new ATCmd<Modem>( '+sbdrb' )
-  .onExec( null, async function( at ) {
-    
-    let offset = 0;
+export const CMD_SBDRB = ATCmd.wrapContext<Modem>( '+sbdrb', cmd => {
 
+  cmd.onExec( null, async function( at ) {
+  
+    let offset = 0;
     const mtBuf = this.mtBuffer;
 
     // LENGTH (2 bytes) + MESSAGE (LENGTH bytes) + CHECKSUM (2 bytes)
@@ -42,11 +46,13 @@ export const CMD_SBDRB = new ATCmd<Modem>( '+sbdrb' )
       mtBuf.checksum, offset );
 
     at.writeRaw( buffer );
-
   })
 
-export const CMD_SBDWB = new ATCmd<Modem>( '+sbdwb' )
-  .onSet( /\d+/, async function( at, match ) {
+})
+
+export const CMD_SBDWB = ATCmd.wrapContext<Modem>( '+sbdwb', cmd => {
+
+  cmd.onSet( /\d+/, async function( at, match ) {
     
     const code = {
       OK            : '0', // everything was ok
@@ -86,3 +92,5 @@ export const CMD_SBDWB = new ATCmd<Modem>( '+sbdwb' )
     }
 
   })
+
+})

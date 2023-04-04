@@ -13,12 +13,12 @@ describe('AT command RegExp test', () => {
     autoOpen: false,
   });
 
-  const atInterface = new ATInterface( sp, undefined );
+  const atInterface = new ATInterface( sp );
 
   const expectCmd = ( 
-    cmd: ATCmd, cmdStr: string
+    cmd: ATCmd<any>, cmdStr: string
   ) => { 
-    return expect( cmd.test( atInterface, cmdStr, undefined ) )
+    return expect( cmd.test( atInterface, cmdStr ) )
   }
 
   test( 'AT test', () => {

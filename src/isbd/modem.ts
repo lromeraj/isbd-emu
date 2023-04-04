@@ -16,7 +16,7 @@ export interface MobileBuffer {
 export class Modem {
 
   sp: SerialPort;
-  at: ATInterface<Modem>; // TODO: this looks like inheritance ???
+  at: ATInterface;
   imei: string;
 
   moBuffer: MobileBuffer = {
@@ -34,15 +34,14 @@ export class Modem {
     this.sp = options.serialPort;
     this.imei = options.imei || '527695889002193';
 
-    this.at = new ATInterface<Modem>( this.sp, this ); // TODO: again inheritance ....
-
+    this.at = new ATInterface( this.sp );
 
     this.at.registerCommands([
       CMD_CGSN,
       CMD_SBDTC,
       CMD_SBDRB,
       CMD_SBDWB,
-    ])
+    ], this )
 
   } 
 
@@ -75,7 +74,7 @@ export function validateMB( mo: MobileBuffer ): boolean {
  * @param payloadLength 
  * @returns 
  */
-export function readMB<T>( at: ATInterface<T>, payloadLength: number ): Promise<MobileBuffer> {
+export function readMB( at: ATInterface, payloadLength: number ): Promise<MobileBuffer> {
   return at.readBytes( payloadLength + 2, 60000 ).then( buffer => ({
     buffer: buffer.subarray( 0, payloadLength ),
     checksum: buffer.readUInt16BE( payloadLength )

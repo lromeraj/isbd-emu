@@ -1,9 +1,10 @@
 import type { ATInterface } from "./interface";
 
-export class ATCmd<ContextType = undefined> {
+export class ATCmd<ContextType> {
 
   private name: string;
   private regExp: RegExp;
+  private context: ContextType;
 
   private cmdHandlers: { 
     onTest?: { handler: ATCmd.Handler<ContextType> },
@@ -12,9 +13,10 @@ export class ATCmd<ContextType = undefined> {
     onExec?: { regexp?: RegExp, handler: ATCmd.Handler<ContextType> },
   } = { }
 
-  constructor( name?: string ) {
+  constructor( name: string, context: ContextType ) {
     
     this.name = name || '';
+    this.context = context;
 
     if ( !this.name ) {
       this.regExp = /^(at)$/i
@@ -27,7 +29,7 @@ export class ATCmd<ContextType = undefined> {
   }
 
   test( 
-    at: ATInterface<ContextType>, cmdStr: string, context: ContextType 
+    at: ATInterface, cmdStr: string
   ): undefined | Promise<void> {
 
     const match = cmdStr.match( this.regExp )
@@ -38,14 +40,14 @@ export class ATCmd<ContextType = undefined> {
       const [ _, _name, type, param ] = match;
       
       if ( type === '?' && cmdHandlers.onRead ) {
-        return cmdHandlers.onRead.handler.apply( context, [ at, [] ] );
+        return cmdHandlers.onRead.handler.apply( this.context, [ at, [] ] );
       } else if ( type === '=?' && cmdHandlers.onTest ) {
-        return cmdHandlers.onTest.handler.apply( context, [ at, [] ] );
+        return cmdHandlers.onTest.handler.apply( this.context, [ at, [] ] );
       } else if ( type === '=' && cmdHandlers.onSet ) {
         
         const match = param.match( cmdHandlers.onSet.regexp );
         return match 
-          ? cmdHandlers.onSet.handler.apply( context, [ at, match ] ) 
+          ? cmdHandlers.onSet.handler.apply( this.context, [ at, match ] ) 
           : undefined; 
 
       } else if ( type === undefined && cmdHandlers.onExec ) {
@@ -55,11 +57,11 @@ export class ATCmd<ContextType = undefined> {
           const paramMatch = param.match( cmdHandlers.onExec.regexp );
 
           return paramMatch
-            ? cmdHandlers.onExec.handler.apply( context, [ at, paramMatch ] )
+            ? cmdHandlers.onExec.handler.apply( this.context, [ at, paramMatch ] )
             : undefined;
 
         } else {
-          return cmdHandlers.onExec.handler.apply( context, [ at, [] ] );
+          return cmdHandlers.onExec.handler.apply( this.context, [ at, [] ] );
         }
 
       }
@@ -92,6 +94,23 @@ export class ATCmd<ContextType = undefined> {
     return this;
   }
 
+  setContext( context: ContextType ) {
+    this.context = context;
+  }
+
+  static wrapContext<T = undefined>(
+    name: string,
+    callback: ( cmd: ATCmd<T> ) => void
+  ): ( context: T ) => ATCmd<T> {
+
+    return ( ctx: T ) => {
+      const cmd = new ATCmd<T>( name, ctx ) 
+      callback( cmd )
+      return cmd
+    }
+
+  } 
+
 }
 
 export namespace ATCmd {
@@ -101,6 +120,6 @@ export namespace ATCmd {
     ERR,
   };
   
-  export type Handler<T> = (this: T, at: ATInterface<T>, match: string[] ) => Promise<void>
+  export type Handler<T> = (this: T, at: ATInterface, match: string[] ) => Promise<void>
 
 }
