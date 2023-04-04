@@ -69,9 +69,7 @@ export const CMD_SBDWB = ATCmd.wrapContext<Modem>( '+sbdwb', cmd => {
 
       at.writeLine( 'READY' );
     
-      return readMB( at, payloadLength )
-
-        .then( mobBuf => {
+      return readMB( at, payloadLength ).then( mobBuf => {
 
         if ( validateMB( mobBuf ) ) { // message is valid
           
