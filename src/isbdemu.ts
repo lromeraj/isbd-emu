@@ -2,7 +2,8 @@ import colors from "colors";
 import logger from "./logger";
 import { SerialPort } from "serialport"
 import { Argument, Command, Option, program } from "commander";
-import { ATCmd, ATInterface } from "./at";
+import { ATCmd } from "./at/cmd";
+import { ATInterface } from "./at/interface";
 import { validateMsg, readBinMsg } from "./isbd";
 
 program
@@ -46,35 +47,6 @@ async function main() {
   }
 
   const atInterface = new ATInterface( serialport );
-
-  const CMD_AT = new ATCmd()
-    .onExec( null, async at => { });
-
-  const CMD_QUIET = new ATCmd( 'q' )
-    .onExec( /[01]?/, async ( at, match ) => { })
-
-  const CMD_ECHO = new ATCmd( 'e' )
-    .onExec( /[01]?/, async ( at, match ) => {
-      at.setEcho( 
-        Boolean( parseInt( match[ 0 ] || '1' ) ) )
-    })
-
-  const CMD_VERBOSE = new ATCmd( 'v' )
-    .onExec( /[01]?/i, async ( at, match ) => {
-      at.setVerbose( 
-        Boolean( parseInt( match[ 0 ] || '1' ) ) )
-    })
-
-  const CMD_FLOW_CONTROL = new ATCmd( '&k' )
-    .onExec( /[03]?/, async ( at, match ) => { 
-      const opt = parseInt( match[ 0 ] || '3' );
-      at.setFlowControl( opt === 3 );
-    })
-
-  const CMD_DTR = new ATCmd( '&d' )
-    .onExec( /[0-3]?/, async ( at, match ) => {
-      const opt = parseInt( match[ 0 ] || '2' ) 
-    })
 
   const CMD_IMEI = new ATCmd( '+cgsn' )
     .onExec( null, async at => {
@@ -159,13 +131,7 @@ async function main() {
     })
 
   atInterface.registerCommands([
-    CMD_AT,
-    CMD_QUIET,
-    CMD_ECHO,
-    CMD_DTR,
-    CMD_FLOW_CONTROL,
     CMD_IMEI,
-    CMD_VERBOSE,
     CMD_SBDWB,
     CMD_SBDTC,
     CMD_SBDRB,

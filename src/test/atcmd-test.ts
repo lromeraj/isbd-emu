@@ -1,5 +1,6 @@
+import { ATCmd } from '../at/cmd';
 import { SerialPort } from 'serialport';
-import { ATCmd, ATInterface } from '../at';
+import { ATInterface } from '../at/interface';
 
 describe('ATCmd module', () => {
 
@@ -19,6 +20,7 @@ describe('ATCmd module', () => {
     expect( cmd.test( atInterface, 'a' ) ).toBeUndefined()
     expect( cmd.test( atInterface, 'at' ) ).toBeTruthy()
     expect( cmd.test( atInterface, 'ate' ) ).toBeUndefined()
-
+  
   });
+
 });

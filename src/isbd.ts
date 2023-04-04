@@ -1,4 +1,4 @@
-import { ATInterface } from "./at";
+import { ATInterface } from "./at/interface";
 
 export function computeMsgChecksum( message: Buffer ) {
   let payloadChecksum = 0;
