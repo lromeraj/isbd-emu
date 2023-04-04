@@ -4,16 +4,18 @@ import colors, { underline } from "colors";
 import { SerialPort } from "serialport";
 
 import { ATCmd } from "./cmd";
+import { CMD_AT, CMD_DTR, CMD_ECHO, CMD_FLOW_CONTROL, CMD_QUIET, CMD_VERBOSE } from "./commands";
 
 enum ATIStatus {
   WAITING,
   PROCESSING,
 };
 
-export class ATInterface {
+export class ATInterface<CmdCtxType = null> {
 
   private sp: SerialPort;
-  private commands: ATCmd[] = [];
+  private context: CmdCtxType; 
+  private commands: ATCmd<CmdCtxType>[] = [];
   private status: ATIStatus = ATIStatus.WAITING;
 
   private echo: boolean = false;
@@ -30,9 +32,10 @@ export class ATInterface {
     callback: ( buffer: Buffer ) => void,
   }[] = []
 
-  constructor( sp: SerialPort ) {
+  constructor( sp: SerialPort, context: CmdCtxType ) {
     
     this.sp = sp;
+    this.context = context;
 
     this.sp.on( 'data', ( buffer: Buffer ) => {
 
@@ -49,7 +52,12 @@ export class ATInterface {
     })
 
     this.registerCommands([
-      
+      CMD_AT,
+      CMD_ECHO,
+      CMD_QUIET,
+      CMD_VERBOSE,
+      CMD_DTR,
+      CMD_FLOW_CONTROL,
     ])
 
   }
@@ -97,7 +105,7 @@ export class ATInterface {
         this.atCmdStr += char;
         
         if ( this.echo ) {
-          this.sp.write( byte );
+          this.sp.write( char );
         }
 
         if ( byte === 13 ) {
@@ -114,19 +122,20 @@ export class ATInterface {
   private processCommand( atCmdStr: string ) {
 
     this.status = ATIStatus.PROCESSING;
-
     let atCmdStrFiltered = atCmdStr.replace( /\r$/ig, '' );
-
-    logger.debug( `Processing command ${ 
-      colors.green( atCmdStrFiltered ) 
-    } ...` )
 
     for ( let cmd of this.commands ) {
 
-      const promise = cmd.test( this, atCmdStrFiltered );
+      const promise = cmd.test( this, atCmdStrFiltered, this.context );
 
       if ( promise ) {
+        
+        logger.debug( `Processing command: ${ 
+          colors.blue( atCmdStrFiltered ) 
+        }` )
+
         promise.then( () => {
+       
           // ! We could allow to commands to
           // ! return a status code but this should not be necessary
           // ! If the command was tested means that everything was OK
@@ -139,13 +148,19 @@ export class ATInterface {
         }).finally(() => {
           this.status = ATIStatus.WAITING;
         })
+
         return;
       }
+
     }
 
+    logger.error( `Unknown command: ${
+      colors.red( atCmdStrFiltered )
+    }` )
+
     this.status = ATIStatus.WAITING;
-    this.writeStatus( ATCmd.Status.UNK );
- 
+    this.writeStatus( ATCmd.Status.ERR );
+
   }
 
   private getLineStart() {
@@ -212,11 +227,11 @@ export class ATInterface {
       this.getLineStart() + line + this.getLineEnd() ) )
   }
 
-  registerCommand( atCmd: ATCmd ) {
+  registerCommand( atCmd: ATCmd<CmdCtxType> ) {
     this.commands.push( atCmd );
   }
 
-  registerCommands( atCmds: ATCmd[] ) {
+  registerCommands( atCmds: ATCmd<CmdCtxType>[] ) {
     this.commands.push( ... atCmds );
   }
 
