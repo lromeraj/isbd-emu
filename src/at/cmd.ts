@@ -119,7 +119,8 @@ export namespace ATCmd {
     OK,
     ERR,
   };
-  
+
   export type Handler<T> = (this: T, at: ATInterface, match: string[] ) => Promise<void>
+  export type ContextWrapper<T> = ( context: T ) => ATCmd<T>
 
 }

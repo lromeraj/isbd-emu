@@ -225,7 +225,7 @@ export class ATInterface {
       this.getLineStart() + line + this.getLineEnd() ) )
   }
 
-  registerCommand<T>( atCmd: ATCmd<T> | ( (cmd: T) => ATCmd<T> ), context?: T ) {
+  registerCommand<T>( atCmd: ATCmd.ContextWrapper<T> | ATCmd<T>, context?: T ): void {
     if ( typeof atCmd === 'function' && context ) {
       this.commands.push( atCmd( context ) );
     } else if ( atCmd instanceof ATCmd ) {
@@ -234,8 +234,8 @@ export class ATInterface {
   }
 
   registerCommands<T>( atCmds: ATCmd<T>[] ): void;
-  registerCommands<T>( atCmds: ((cmd: T) => ATCmd<T> )[], context: T ): void;
-  registerCommands<T>( atCmds: (ATCmd<T> | ( (cmd: T) => ATCmd<T> ))[], context?: T ): void {
+  registerCommands<T>( atCmds: ATCmd.ContextWrapper<T>[], context: T ): void;
+  registerCommands<T>( atCmds: ATCmd.ContextWrapper<T>[] | ATCmd<T>[], context?: T ): void {
     atCmds.forEach( atCmd => {
       this.registerCommand( atCmd, context );
     })

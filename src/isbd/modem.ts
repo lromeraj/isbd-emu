@@ -45,9 +45,7 @@ export class Modem {
 
   } 
 
-
 }
-
 
 export function computeChecksum( message: Buffer ) {
   let payloadChecksum = 0;

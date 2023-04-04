@@ -1,14 +1,12 @@
 import { ATCmd } from "../at/cmd"
 import { Modem, readMB, validateMB } from "./modem";
 
-
 export const CMD_CGSN = ATCmd.wrapContext<Modem>( '+cgsn', cmd => {
   cmd.onExec( null, async function( at ) {
     at.writeLine( this.imei );
   })
 })
   
-
 /**
  * Transfer mobile terminated originated buffer 
  * to mobile terminated buffer
