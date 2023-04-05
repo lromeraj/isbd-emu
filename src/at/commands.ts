@@ -2,7 +2,7 @@ import logger from "../logger";
 import { ATCmd } from "./cmd";
 
 export const CMD_AT = new ATCmd( '', undefined )
-  .onExec( null, async at => { } );
+  .onExec( async at => { } );
 
 export const CMD_QUIET = new ATCmd( 'q', undefined )
   .onExec( /^[01]?$/, async ( at, match ) => {

@@ -1,10 +1,16 @@
 import logger from "../logger"
 import colors, { underline } from "colors";
-
 import { SerialPort } from "serialport";
-
 import { ATCmd } from "./cmd";
-import { CMD_AT, CMD_DTR, CMD_ECHO, CMD_FLOW_CONTROL, CMD_QUIET, CMD_VERBOSE } from "./commands";
+
+import { 
+  CMD_AT, 
+  CMD_DTR, 
+  CMD_ECHO, 
+  CMD_FLOW_CONTROL, 
+  CMD_QUIET, 
+  CMD_VERBOSE 
+} from "./commands";
 
 enum ATIStatus {
   WAITING,
@@ -17,26 +23,36 @@ export class ATInterface {
   private commands: ATCmd<any>[] = [];
   private status: ATIStatus = ATIStatus.WAITING;
 
-  private echo: boolean = false;
-  private quiet: boolean = false;
-  private verbose: boolean = true;
+  private echo: boolean = false; // TODO: expose echo
+  private quiet: boolean = false; // TODO: expose quiet
+  private verbose: boolean = true; // TODO: expose verbose
 
   private atCmdStr = '';
   private atCmdMask = 'AT';
-
-  private requestBuffer: Buffer = Buffer.from([]);
-
+  
   private requests: {
-    length: number,
+    delimiter: ATInterface.Delimiter,
     callback: ( buffer: Buffer ) => void,
   }[] = []
 
-  constructor( sp: SerialPort ) {
+  private requestBuffer: number[] = [];
+
+  constructor( serialPortOpts: ATInterface.SerialPortOptions ) {
     
-    this.sp = sp;
+    this.sp = new SerialPort({ 
+      path: serialPortOpts.path, 
+      baudRate: serialPortOpts.baudRate,
+      autoOpen: true,
+    }, err => {
+      if ( err ) {
+        logger.error( err.message )
+      } else {
+        logger.success( `Modem is ready` )
+      }
+    });
 
     this.sp.on( 'data', ( buffer: Buffer ) => {
-
+      
       if ( this.status === ATIStatus.WAITING ) {
         // TODO: Considere this possibility
         // if ( this.requestBuffer.length > 0 ) {
@@ -61,25 +77,24 @@ export class ATInterface {
   }
 
   private processingCmd( buffer: Buffer ) {
+    
+    buffer.forEach( byte => {
+      
+      this.requestBuffer.push( byte );
+      const currentReq = this.requests[ 0 ];
+      
+      if ( currentReq ) {
 
-    const currentReq = this.requests[ 0 ];
-    
-    this.requestBuffer = Buffer.concat([ 
-      this.requestBuffer, buffer 
-    ])
-    
-    if ( currentReq ) {
-      if ( this.requestBuffer.length >= currentReq.length ) {
-        
-        currentReq.callback( 
-          this.requestBuffer.subarray( 0, currentReq.length ) );
-        
-        this.requestBuffer = 
-          this.requestBuffer.subarray( currentReq.length );
-        
-        this.requests.shift();
+        if ( currentReq.delimiter( byte, this.requestBuffer ) ) {
+          currentReq.callback( Buffer.from( this.requestBuffer ) )
+          this.requestBuffer = [];
+          this.requests.shift()
+        } 
+
       }
-    }
+
+    })
+    
 
   }
 
@@ -117,43 +132,55 @@ export class ATInterface {
 
   }
 
+  private escapeLine( line: string ) {
+    return line
+      .replace( /\r/g, '\\r' )
+      .replace( /\n/g, '\\n' )
+  }
+
   private processCommand( atCmdStr: string ) {
 
     this.status = ATIStatus.PROCESSING;
-    let atCmdStrFiltered = atCmdStr.replace( /\r$/ig, '' );
 
     for ( let cmd of this.commands ) {
 
-      const promise = cmd.test( this, atCmdStrFiltered );
+      const promise = cmd.test( this, atCmdStr );
 
       if ( promise ) {
         
-        logger.debug( `Processing command: ${ 
-          colors.blue( atCmdStrFiltered ) 
+        logger.debug( `Processing command: [${
+          colors.bold.cyan( cmd.fqn.toUpperCase() )
+        }] ${
+          colors.blue( this.escapeLine( atCmdStr ) )
         }` )
 
-        promise.then( () => {
-       
-          // ! We could allow to commands to
-          // ! return a status code but this should not be necessary
-          // ! If the command was tested means that everything was OK
-          // ! at the AT interface layer
-          this.writeStatus( ATCmd.Status.OK );
+        promise.then( str => {
+
+          if ( typeof str === 'number' ) {
+            this.writeStatus( str );
+          } else if ( typeof str === 'string' ) {
+            this.writeLine( str );
+          } else {
+            this.writeStatus( ATCmd.Status.OK );
+          }
 
         }).catch( err => {
+
           // TODO: write AT error response ????
           logger.error( `Internal command error => ${ err.stack }` )
+
         }).finally(() => {
           this.status = ATIStatus.WAITING;
         })
-
+        
+        // TODO: we could run over other commands to check ambiguity
         return;
       }
 
     }
 
     logger.error( `Unknown command: ${
-      colors.red( atCmdStrFiltered )
+      colors.red( this.escapeLine( atCmdStr ) )
     }` )
 
     this.status = ATIStatus.WAITING;
@@ -195,8 +222,10 @@ export class ATInterface {
       logger.info( `Verbose mode disabled` );
     }
   }
-  
-  readBytes( n: number, timeout: number ): Promise<Buffer> {
+
+  readRawUntil( 
+    delimiter: ATInterface.Delimiter, timeout: number 
+  ): Promise<Buffer> {
 
     return new Promise( ( resolve, reject ) => {
 
@@ -205,7 +234,7 @@ export class ATInterface {
       }, timeout );
 
       this.requests.push({
-        length: n,
+        delimiter,
         callback: buffer => {
           clearTimeout( timer );
           resolve( buffer );
@@ -223,6 +252,14 @@ export class ATInterface {
   writeLine( line: string ) {
     this.writeRaw( Buffer.from( 
       this.getLineStart() + line + this.getLineEnd() ) )
+  }
+
+  writeLineStart( line: string ) {
+    this.writeRaw( Buffer.from( this.getLineStart() + line ) )
+  }
+
+  writeLineEnd( line: string ) {
+    this.writeRaw( Buffer.from( line + this.getLineEnd() ) )
   }
 
   registerCommand<T>( atCmd: ATCmd.ContextWrapper<T> | ATCmd<T>, context?: T ): void {
@@ -249,4 +286,12 @@ export class ATInterface {
     }
   }
 
+}
+
+export namespace ATInterface {
+  export interface SerialPortOptions {
+    path: string;
+    baudRate: number;
+  };
+  export type Delimiter = ( currentByte: number, currentBuf: number[] ) => boolean
 }

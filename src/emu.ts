@@ -2,8 +2,6 @@ import colors from "colors";
 import logger from "./logger";
 import { SerialPort } from "serialport"
 import { Argument, Command, Option, program } from "commander";
-import { ATCmd } from "./at/cmd";
-import { ATInterface } from "./at/interface";
 import { Modem } from "./isbd/modem";
 
 program
@@ -24,22 +22,11 @@ async function main() {
   program.parse();
   const opts = program.opts();
 
-  const sp = new SerialPort({ 
-    path: opts.path, 
-    baudRate: 19200,
-    autoOpen: true,
-  }, err => {
-    if ( err ) {
-      logger.error( err.message )
-      process.exit( 1 );
-    } else {
-      logger.success( `Modem is ready` )
-    }
-  })
-
   const modem = new Modem({
     imei: opts.imei,
-    serialPort: sp,
+    dte: {
+      path: opts.path,
+    },
   });
 
 }

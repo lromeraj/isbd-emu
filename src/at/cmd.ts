@@ -1,68 +1,53 @@
+import logger from "../logger";
 import type { ATInterface } from "./interface";
 
 export class ATCmd<ContextType> {
 
-  private name: string;
+  readonly name: string;
   private regExp: RegExp;
   private context: ContextType;
 
   private cmdHandlers: { 
-    onTest?: { handler: ATCmd.Handler<ContextType> },
-    onRead?: { handler: ATCmd.Handler<ContextType> },
-    onSet?: { regexp: RegExp, handler: ATCmd.Handler<ContextType> },
-    onExec?: { regexp?: RegExp, handler: ATCmd.Handler<ContextType> },
+    onSet?: ATCmd.Handler<ContextType>,
+    onTest?: ATCmd.Handler<ContextType>,
+    onRead?: ATCmd.Handler<ContextType>,
+    onExec?: ATCmd.Handler<ContextType>,
   } = { }
 
   constructor( name: string, context: ContextType ) {
     
-    this.name = name || '';
+    this.name = name;
     this.context = context;
 
-    if ( !this.name ) {
-      this.regExp = /^(at)$/i
-    } else {
-      this.regExp = new RegExp( `^(at${
-        this.name.replace( /[/$&*+]/g, '\\$&' )
-      })(\\=\\?|\\=|\\?)?(.*)$`, 'i' );
-    }
+    this.regExp = new RegExp( `^(at${
+      this.name.replace( /[/$&*+]/g, '\\$&' )
+    })(\\=\\?|\\=|\\?)?(.*)\r$`, 'i' );
 
   }
 
-  test( 
-    at: ATInterface, cmdStr: string
-  ): undefined | Promise<void> {
+  /**
+   * Fully qualified name
+   */
+  get fqn() {
+    return 'AT' + this.name.toUpperCase();
+  }
 
-    const match = cmdStr.match( this.regExp )
+  private testHandler(
+    handler: ATCmd.Handler<ContextType> | undefined, 
+    at: ATInterface, 
+    strParam: string
+  ) {
 
-    if ( match ) {
+    if ( handler ) {
 
-      const cmdHandlers = this.cmdHandlers;
-      const [ _, _name, type, param ] = match;
-      
-      if ( type === '?' && cmdHandlers.onRead ) {
-        return cmdHandlers.onRead.handler.apply( this.context, [ at, [] ] );
-      } else if ( type === '=?' && cmdHandlers.onTest ) {
-        return cmdHandlers.onTest.handler.apply( this.context, [ at, [] ] );
-      } else if ( type === '=' && cmdHandlers.onSet ) {
-        
-        const match = param.match( cmdHandlers.onSet.regexp );
-        return match 
-          ? cmdHandlers.onSet.handler.apply( this.context, [ at, match ] ) 
-          : undefined; 
+      if ( !handler.regexp && strParam === '' ) {
+        return handler.callback.apply( this.context, [ at, [] ] )
+      } else if ( handler.regexp ) {
 
-      } else if ( type === undefined && cmdHandlers.onExec ) {
-
-        if ( cmdHandlers.onExec.regexp ) {
-          
-          const paramMatch = param.match( cmdHandlers.onExec.regexp );
-
-          return paramMatch
-            ? cmdHandlers.onExec.handler.apply( this.context, [ at, paramMatch ] )
-            : undefined;
-
-        } else {
-          return cmdHandlers.onExec.handler.apply( this.context, [ at, [] ] );
-        }
+        const paramMatch = strParam.match( handler.regexp );
+        return paramMatch 
+          ? handler.callback.apply( this.context, [ at, paramMatch ] )
+          : undefined
 
       }
 
@@ -71,37 +56,73 @@ export class ATCmd<ContextType> {
     return undefined;
   }
 
-  onExec( regexp: RegExp | null, handler: ATCmd.Handler<ContextType> ) {
-    this.cmdHandlers.onExec = { 
-      handler,
-      regexp: regexp || undefined, 
-    };
+  test(
+    at: ATInterface, cmdStr: string
+  ): undefined | Promise<string | number | void> {
+
+    const match = cmdStr.match( this.regExp )
+
+    if ( match ) {
+
+      const [ _cmd, _name, type, strParam ] = match;
+
+      if ( type === '?' ) {
+        return this.testHandler( this.cmdHandlers.onRead, at, strParam );
+      } else if ( type === '=?' ) {
+        return this.testHandler( this.cmdHandlers.onTest, at, strParam );
+      } else if ( type === '=' ) {
+        return this.testHandler( this.cmdHandlers.onSet, at, strParam );
+      } else if ( type === undefined ) {
+        return this.testHandler( this.cmdHandlers.onExec, at, strParam );
+      }
+
+    }
+
+    return undefined;
+  }
+
+  onExec( handler: ATCmd.HandlerCallback<ContextType> ): this;
+  onExec( regExp: RegExp, handler: ATCmd.HandlerCallback<ContextType> ): this;
+  onExec( 
+    regExpOrCallback?: RegExp | ATCmd.HandlerCallback<ContextType>, 
+    callback?: ATCmd.HandlerCallback<ContextType> 
+  ): this {
+    
+    if ( regExpOrCallback instanceof RegExp 
+        && typeof callback === 'function' ) {
+      this.cmdHandlers.onExec = { 
+        callback,
+        regexp: regExpOrCallback,
+      };
+    } else if ( typeof regExpOrCallback === 'function' ) {
+      this.cmdHandlers.onExec = {
+        regexp: undefined, 
+        callback: regExpOrCallback,
+      };
+    }
+
     return this;
   }
 
-  onRead( handler: ATCmd.Handler<ContextType> ) {
-    this.cmdHandlers.onRead = { handler };
+  onRead( callback: ATCmd.HandlerCallback<ContextType> ) {
+    this.cmdHandlers.onRead = { callback };
     return this;
   }
 
-  onSet( regexp: RegExp, handler: ATCmd.Handler<ContextType> ) {
-    this.cmdHandlers.onSet = { regexp, handler };
+  onSet( regexp: RegExp, callback: ATCmd.HandlerCallback<ContextType> ) {
+    this.cmdHandlers.onSet = { regexp, callback };
     return this;
   }
 
-  onTest( handler: ATCmd.Handler<ContextType> ) {
-    this.cmdHandlers.onTest = { handler };
+  onTest( callback: ATCmd.HandlerCallback<ContextType> ) {
+    this.cmdHandlers.onTest = { callback };
     return this;
-  }
-
-  setContext( context: ContextType ) {
-    this.context = context;
   }
 
   static wrapContext<T = undefined>(
     name: string,
     callback: ( cmd: ATCmd<T> ) => void
-  ): ( context: T ) => ATCmd<T> {
+  ): ATCmd.ContextWrapper<T> {
 
     return ( ctx: T ) => {
       const cmd = new ATCmd<T>( name, ctx ) 
@@ -120,7 +141,15 @@ export namespace ATCmd {
     ERR,
   };
 
-  export type Handler<T> = (this: T, at: ATInterface, match: string[] ) => Promise<void>
+  export interface Handler<ContextType> {
+    callback: HandlerCallback<ContextType>;
+    regexp?: RegExp;
+  }
+
+  export type HandlerCallback<ContextType> = ( 
+    this: ContextType, at: ATInterface, match: string[] 
+  ) => Promise<string | number | void>
+
   export type ContextWrapper<T> = ( context: T ) => ATCmd<T>
 
 }

@@ -22,23 +22,24 @@ describe('AT command RegExp test', () => {
   }
 
   test( 'AT test', () => {
-    expectCmd( CMD_AT, 'at' ).toBeTruthy();
-    expectCmd( CMD_AT, 'AT' ).toBeTruthy();
-    expectCmd( CMD_AT, 'a' ).toBeUndefined();
-    expectCmd( CMD_AT, 't' ).toBeUndefined();
+    expectCmd( CMD_AT, 'at\r' ).toBeTruthy();
+    expectCmd( CMD_AT, 'AT\r' ).toBeTruthy();
+    expectCmd( CMD_AT, 'a\r' ).toBeUndefined();
+    expectCmd( CMD_AT, 't\r' ).toBeUndefined();
+    expectCmd( CMD_AT, '\r' ).toBeUndefined();
   });
   
   test( 'AT echo', () => {
-    expectCmd( CMD_ECHO, 'ate' ).toBeTruthy()
-    expectCmd( CMD_ECHO, 'ate0' ).toBeTruthy()
-    expectCmd( CMD_ECHO, 'ate1' ).toBeTruthy()
-    expectCmd( CMD_ECHO, 'ate1o' ).toBeUndefined()
+    expectCmd( CMD_ECHO, 'ate\r' ).toBeTruthy()
+    expectCmd( CMD_ECHO, 'ate0\r' ).toBeTruthy()
+    expectCmd( CMD_ECHO, 'ate1\r' ).toBeTruthy()
+    expectCmd( CMD_ECHO, 'ate1o\r' ).toBeUndefined()
   })
 
   test( 'AT verbose', () => {
-    expectCmd( CMD_VERBOSE, 'atv0' ).toBeTruthy()
-    expectCmd( CMD_VERBOSE, 'atv1' ).toBeTruthy()
-    expectCmd( CMD_VERBOSE, 'atevp' ).toBeUndefined()
+    expectCmd( CMD_VERBOSE, 'atv0\r' ).toBeTruthy()
+    expectCmd( CMD_VERBOSE, 'atv1\r' ).toBeTruthy()
+    expectCmd( CMD_VERBOSE, 'atevp\r' ).toBeUndefined()
   })
 
 });

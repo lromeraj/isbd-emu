@@ -1,11 +1,16 @@
 import logger from "../logger";
-import { SerialPort } from "serialport";
+import { SerialPort, SerialPortOpenOptions } from "serialport";
 import { ATInterface } from "../at/interface";
-import { CMD_CGSN, CMD_SBDRB, CMD_SBDTC, CMD_SBDWB } from "./commands";
+import { CMD_CGSN, CMD_SBDD, CMD_SBDIX, CMD_SBDIXA, CMD_SBDRB, CMD_SBDRT, CMD_SBDTC, CMD_SBDWB, CMD_SBDWT } from "./commands";
 
 export interface ModemOptions {
+  
   imei?: string;
-  serialPort: SerialPort;
+
+  dte: {
+    path: string
+  };
+
 }
 
 export interface MobileBuffer {
@@ -15,7 +20,6 @@ export interface MobileBuffer {
 
 export class Modem {
 
-  sp: SerialPort;
   at: ATInterface;
   imei: string;
 
@@ -31,19 +35,40 @@ export class Modem {
   
   constructor( options: ModemOptions ) {
 
-    this.sp = options.serialPort;
-    this.imei = options.imei || '527695889002193';
+    this.at = new ATInterface({
+      baudRate: 19200,
+      path: options.dte.path,
+    });
 
-    this.at = new ATInterface( this.sp );
+    this.imei = options.imei || '527695889002193';
 
     this.at.registerCommands([
       CMD_CGSN,
       CMD_SBDTC,
       CMD_SBDRB,
       CMD_SBDWB,
+      CMD_SBDIX,
+      CMD_SBDIXA,
+      CMD_SBDD,
+      CMD_SBDWT,
+      CMD_SBDRT,
     ], this )
 
-  } 
+  }
+
+  static clearMobileBuffer( mobBuf: MobileBuffer ) {
+    mobBuf.checksum = 0;
+    mobBuf.buffer = Buffer.alloc(0);
+  }
+
+  static updateMobileBuffer( mobBuf: MobileBuffer, buffer: Buffer, checksum?: number ) {
+    
+    mobBuf.buffer = buffer;
+    mobBuf.checksum = checksum === undefined 
+      ? computeChecksum( buffer ) 
+      : checksum;
+
+  }
 
 }
 
@@ -67,13 +92,18 @@ export function validateMB( mo: MobileBuffer ): boolean {
 }
 
 /**
+ * Reads a mobile buffer from the given AT interface
  * 
  * @param at 
  * @param payloadLength 
  * @returns 
  */
 export function readMB( at: ATInterface, payloadLength: number ): Promise<MobileBuffer> {
-  return at.readBytes( payloadLength + 2, 60000 ).then( buffer => ({
+
+  const delimiter: ATInterface.Delimiter = ( byte, buf ) => 
+    buf.length >= payloadLength + 2
+
+  return at.readRawUntil( delimiter, 60000 ).then( buffer => ({
     buffer: buffer.subarray( 0, payloadLength ),
     checksum: buffer.readUInt16BE( payloadLength )
   }))

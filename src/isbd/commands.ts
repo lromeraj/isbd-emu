@@ -1,8 +1,12 @@
+import { ATInterface } from "../at/interface";
 import { ATCmd } from "../at/cmd"
-import { Modem, readMB, validateMB } from "./modem";
+import { computeChecksum, Modem, readMB, validateMB } from "./modem";
 
+/**
+ * 5.21 +CGSN – Serial Number
+ */
 export const CMD_CGSN = ATCmd.wrapContext<Modem>( '+cgsn', cmd => {
-  cmd.onExec( null, async function( at ) {
+  cmd.onExec( async function( at ) {
     at.writeLine( this.imei );
   })
 })
@@ -12,9 +16,104 @@ export const CMD_CGSN = ATCmd.wrapContext<Modem>( '+cgsn', cmd => {
  * to mobile terminated buffer
  */
 export const CMD_SBDTC = ATCmd.wrapContext<Modem>( '+sbdtc', cmd => {
-  cmd.onExec( null, async function( at ) {
+  cmd.onExec( async function( at ) {
     this.mtBuffer = { ... this.moBuffer };
+    at.writeLine( `SBDTC: Outbound SBD Copied to Inbound SBD: size = ${ 
+      this.moBuffer.buffer.length 
+    }` )
   })
+})
+
+/**
+ * 5.38 +SBDIX – Short Burst Data: Initiate an SBD Session Extended
+ */
+export const CMD_SBDIX = ATCmd.wrapContext<Modem>( '+sbdix', cmd => {
+  cmd.onExec( async function( at ) {
+
+
+  })
+})
+
+/**
+ * 5.38 +SBDIX – Short Burst Data: Initiate an SBD Session Extended
+*/
+export const CMD_SBDIXA = ATCmd.wrapContext<Modem>( '+sbdixa', cmd => {
+  cmd.onExec( async function( at ) {
+  })
+})
+
+/**
+ * 5.42 +SBDD – Short Burst Data: Clear SBD Message Buffer(s)
+ */
+export const CMD_SBDD = ATCmd.wrapContext<Modem>( '+sbdd', cmd => {
+  cmd.onExec( /^[012]$/, async function( at, [ opt ] ) {
+    
+    const code = {
+      OK      : '0',
+      ERR     : '1',
+    }
+
+    if ( opt === '0' ) {
+      Modem.clearMobileBuffer( this.moBuffer );
+    } else if ( opt === '1' ) {
+      Modem.clearMobileBuffer( this.mtBuffer );
+    } else if ( opt === '2' ) {
+      Modem.clearMobileBuffer( this.moBuffer );
+      Modem.clearMobileBuffer( this.mtBuffer );
+    }
+
+    at.writeLine( code.OK );
+
+  })
+
+})
+
+// 5.34 +SBDRT – Short Burst Data: Read a Text Message from the Module
+// ! Iridium has a mistake in their manual (or in the implementation)
+// ! The modem should respond with  +SBDRT:<CR>{MT buffer}
+// ! but it is responding with      +SBDRT:<CR><LN>{MT buffer}
+export const CMD_SBDRT = ATCmd.wrapContext<Modem>( '+sbdrt', cmd => {
+  cmd.onExec( async function ( at ) {
+    at.writeLineStart( `${ cmd.name.toUpperCase() }:\r\n` )
+    at.writeRaw( this.mtBuffer.buffer )
+  })
+});
+
+export const CMD_SBDWT = ATCmd.wrapContext<Modem>( '+sbdwt', cmd => {
+
+  cmd.onSet( /.+/, async function( at, [txt] ) {
+    
+    if ( txt.length > 120 ) {
+      return ATCmd.Status.ERR;
+    }
+
+    Modem.updateMobileBuffer( 
+      this.moBuffer, Buffer.from( txt ) );
+
+  })
+
+  cmd.onExec( async function( at ) {
+
+    const code = {
+      OK            : '0',
+      ERR_TIMEOUT   : '1',
+    }
+    
+    at.writeLine( 'READY' );
+
+    const delimiter: ATInterface.Delimiter = 
+      byte => byte === 0x0D
+
+    return at.readRawUntil( delimiter, 60000 ).then( buffer => {
+      Modem.updateMobileBuffer( 
+        this.moBuffer, buffer.subarray( 0, -1 ) );
+      at.writeLine( code.OK );
+    }).catch( err => {
+      at.writeLine( code.ERR_TIMEOUT );
+    })
+
+  });
+
 })
 
 /**
@@ -22,11 +121,11 @@ export const CMD_SBDTC = ATCmd.wrapContext<Modem>( '+sbdtc', cmd => {
  */
 export const CMD_SBDRB = ATCmd.wrapContext<Modem>( '+sbdrb', cmd => {
 
-  cmd.onExec( null, async function( at ) {
+  cmd.onExec( async function( at ) {
   
     let offset = 0;
     const mtBuf = this.mtBuffer;
-
+    
     // LENGTH (2 bytes) + MESSAGE (LENGTH bytes) + CHECKSUM (2 bytes)
     const totalLength = 2 + mtBuf.buffer.length + 2;
 
@@ -44,6 +143,7 @@ export const CMD_SBDRB = ATCmd.wrapContext<Modem>( '+sbdrb', cmd => {
       mtBuf.checksum, offset );
 
     at.writeRaw( buffer );
+
   })
 
 })
@@ -71,9 +171,8 @@ export const CMD_SBDWB = ATCmd.wrapContext<Modem>( '+sbdwb', cmd => {
 
         if ( validateMB( mobBuf ) ) { // message is valid
           
-          this.moBuffer = {
-            ... mobBuf
-          };
+          Modem.updateMobileBuffer( 
+            this.moBuffer, mobBuf.buffer, mobBuf.checksum )
 
           at.writeLine( code.OK );
 
