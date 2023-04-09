@@ -1,15 +1,29 @@
 import logger from "../logger";
-import { SerialPort, SerialPortOpenOptions } from "serialport";
+import nodemailer from "nodemailer";
 import { ATInterface } from "../at/interface";
-import { CMD_CGSN, CMD_SBDD, CMD_SBDIX, CMD_SBDIXA, CMD_SBDRB, CMD_SBDRT, CMD_SBDTC, CMD_SBDWB, CMD_SBDWT } from "./commands";
+import { 
+  CMD_CGSN, 
+  CMD_SBDD, 
+  CMD_SBDIX, 
+  CMD_SBDIXA, 
+  CMD_SBDRB, 
+  CMD_SBDRT, 
+  CMD_SBDTC, 
+  CMD_SBDWB, 
+  CMD_SBDWT 
+} from "./commands";
+import { MOTransport } from "./transport";
 
 export interface ModemOptions {
-  
-  imei?: string;
 
+  imei?: string;
+  
   dte: {
     path: string
   };
+
+  volatile?: boolean;
+  moTransports: MOTransport[];
 
 }
 
@@ -20,18 +34,23 @@ export interface MobileBuffer {
 
 export class Modem {
 
-  at: ATInterface;
   imei: string;
+  at: ATInterface;
 
-  moBuffer: MobileBuffer = {
+  moTransports: MOTransport[];
+
+  momsn: number = 0;
+  mtmsn: number = 0;
+
+  moData: MobileBuffer = {
     buffer: Buffer.alloc( 0 ),
     checksum: 0,
-  }
+  };
 
-  mtBuffer: MobileBuffer = {
+  mtData: MobileBuffer = {
     buffer: Buffer.alloc( 0 ),
     checksum: 0,
-  }
+  };
   
   constructor( options: ModemOptions ) {
 
@@ -39,6 +58,8 @@ export class Modem {
       baudRate: 19200,
       path: options.dte.path,
     });
+
+    this.moTransports = options.moTransports;
 
     this.imei = options.imei || '527695889002193';
 
@@ -54,6 +75,14 @@ export class Modem {
       CMD_SBDRT,
     ], this )
 
+  }
+
+  increaseMTMSN() {
+    this.mtmsn = ( this.mtmsn + 1 ) & 0xFFFF;
+  }
+
+  increaseMOMSN() {
+    this.momsn = ( this.momsn + 1 ) & 0xFFFF;
   }
 
   static clearMobileBuffer( mobBuf: MobileBuffer ) {

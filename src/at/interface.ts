@@ -19,7 +19,7 @@ enum ATIStatus {
 
 export class ATInterface {
 
-  private sp: SerialPort;
+  sp: SerialPort;
   private commands: ATCmd<any>[] = [];
   private status: ATIStatus = ATIStatus.WAITING;
 
@@ -47,7 +47,7 @@ export class ATInterface {
       if ( err ) {
         logger.error( err.message )
       } else {
-        logger.success( `Modem is ready` )
+        logger.success( `AT Interface ready` );
       }
     });
 
@@ -88,7 +88,7 @@ export class ATInterface {
         if ( currentReq.delimiter( byte, this.requestBuffer ) ) {
           currentReq.callback( Buffer.from( this.requestBuffer ) )
           this.requestBuffer = [];
-          this.requests.shift()
+          this.requests.shift();
         } 
 
       }

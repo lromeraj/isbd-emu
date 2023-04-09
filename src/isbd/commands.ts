@@ -1,6 +1,8 @@
-import { ATInterface } from "../at/interface";
+import moment from "moment";
 import { ATCmd } from "../at/cmd"
+import { ATInterface } from "../at/interface";
 import { computeChecksum, Modem, readMB, validateMB } from "./modem";
+import { MOTransport } from "./transport";
 
 /**
  * 5.21 +CGSN – Serial Number
@@ -17,9 +19,9 @@ export const CMD_CGSN = ATCmd.wrapContext<Modem>( '+cgsn', cmd => {
  */
 export const CMD_SBDTC = ATCmd.wrapContext<Modem>( '+sbdtc', cmd => {
   cmd.onExec( async function( at ) {
-    this.mtBuffer = { ... this.moBuffer };
+    this.mtData = { ... this.moData };
     at.writeLine( `SBDTC: Outbound SBD Copied to Inbound SBD: size = ${ 
-      this.moBuffer.buffer.length 
+      this.moData.buffer.length 
     }` )
   })
 })
@@ -29,9 +31,38 @@ export const CMD_SBDTC = ATCmd.wrapContext<Modem>( '+sbdtc', cmd => {
  */
 export const CMD_SBDIX = ATCmd.wrapContext<Modem>( '+sbdix', cmd => {
   cmd.onExec( async function( at ) {
+      
+    // TODO: create a new module named GSS in order to 
+    // TODO: abstract transport functionality
+    const msg: MOTransport.Message = {
+      imei: this.imei,
+      momsn: this.momsn,
+      mtmsn: this.mtmsn,
+      payload: this.moData.buffer,
+      sessionTime: moment(),
+      cepRadius: Math.random()*50,
+      unitLocation: [ -90 + Math.random() * 180, -90 + Math.random() * 180 ],
+    }
+    
+    const promises = this.moTransports.map( 
+      transport => transport.enqueueMessage( msg ) )
 
+    Promise.allSettled( promises ).then( results => {
+      console.log( results )
+    })
+
+    at.writeLine( `${ cmd.name.toUpperCase() }:0,${ 
+      this.momsn 
+    },0,${ 
+      this.mtmsn 
+    },${ 
+      this.mtData.buffer.length 
+    },0` );
+    
+    this.increaseMOMSN();
 
   })
+
 })
 
 /**
@@ -54,12 +85,12 @@ export const CMD_SBDD = ATCmd.wrapContext<Modem>( '+sbdd', cmd => {
     }
 
     if ( opt === '0' ) {
-      Modem.clearMobileBuffer( this.moBuffer );
+      Modem.clearMobileBuffer( this.moData );
     } else if ( opt === '1' ) {
-      Modem.clearMobileBuffer( this.mtBuffer );
+      Modem.clearMobileBuffer( this.mtData );
     } else if ( opt === '2' ) {
-      Modem.clearMobileBuffer( this.moBuffer );
-      Modem.clearMobileBuffer( this.mtBuffer );
+      Modem.clearMobileBuffer( this.moData );
+      Modem.clearMobileBuffer( this.mtData );
     }
 
     at.writeLine( code.OK );
@@ -75,7 +106,7 @@ export const CMD_SBDD = ATCmd.wrapContext<Modem>( '+sbdd', cmd => {
 export const CMD_SBDRT = ATCmd.wrapContext<Modem>( '+sbdrt', cmd => {
   cmd.onExec( async function ( at ) {
     at.writeLineStart( `${ cmd.name.toUpperCase() }:\r\n` )
-    at.writeRaw( this.mtBuffer.buffer )
+    at.writeRaw( this.mtData.buffer )
   })
 });
 
@@ -88,7 +119,7 @@ export const CMD_SBDWT = ATCmd.wrapContext<Modem>( '+sbdwt', cmd => {
     }
 
     Modem.updateMobileBuffer( 
-      this.moBuffer, Buffer.from( txt ) );
+      this.moData, Buffer.from( txt ) );
 
   })
 
@@ -106,7 +137,7 @@ export const CMD_SBDWT = ATCmd.wrapContext<Modem>( '+sbdwt', cmd => {
 
     return at.readRawUntil( delimiter, 60000 ).then( buffer => {
       Modem.updateMobileBuffer( 
-        this.moBuffer, buffer.subarray( 0, -1 ) );
+        this.moData, buffer.subarray( 0, -1 ) );
       at.writeLine( code.OK );
     }).catch( err => {
       at.writeLine( code.ERR_TIMEOUT );
@@ -124,7 +155,7 @@ export const CMD_SBDRB = ATCmd.wrapContext<Modem>( '+sbdrb', cmd => {
   cmd.onExec( async function( at ) {
   
     let offset = 0;
-    const mtBuf = this.mtBuffer;
+    const mtBuf = this.mtData;
     
     // LENGTH (2 bytes) + MESSAGE (LENGTH bytes) + CHECKSUM (2 bytes)
     const totalLength = 2 + mtBuf.buffer.length + 2;
@@ -172,7 +203,7 @@ export const CMD_SBDWB = ATCmd.wrapContext<Modem>( '+sbdwb', cmd => {
         if ( validateMB( mobBuf ) ) { // message is valid
           
           Modem.updateMobileBuffer( 
-            this.moBuffer, mobBuf.buffer, mobBuf.checksum )
+            this.moData, mobBuf.buffer, mobBuf.checksum )
 
           at.writeLine( code.OK );
 
