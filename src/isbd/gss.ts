@@ -53,7 +53,6 @@ export class GSS {
       } else {
         setTimeout( () => {
           this.moMsgQueue.push( msg )
-          logger.de
         }, 30000 ); // TODO: this should be incremental
         throw new Error( `Could not send message` )
       }
