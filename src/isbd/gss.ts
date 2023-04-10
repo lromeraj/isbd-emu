@@ -86,6 +86,7 @@ export class GSS {
         payload: srcMsg.payload,
         sessionTime: moment(),
         unitLocation: this.generateUnitLocation(),
+        sessionStatus: GSS.Session.Status.TRANSFER_OK,
       }
       
       mosts = 0;
@@ -114,7 +115,7 @@ export class GSS {
   private generateUnitLocation(): MOTransport.Message.UnitLocation {
     return {
       coord: [ -90 + Math.random() * 180, -90 + Math.random() * 180 ],
-      cepRadius: Math.random() * 50,
+      cepRadius: 1 + Math.floor( Math.random() * 2000 ),
     }
   }
 
@@ -132,5 +133,51 @@ export namespace GSS {
     mtmsn: number;
     mtlen: number;
     mtq: number;
+  }
+
+  export namespace Session {
+
+    export enum Status {
+
+      /**
+       * The SBD session between the ISU and the Iridium Gateway
+       * completed successfully.
+       */
+      TRANSFER_OK             = 0,
+
+      /**
+       * The MT message queued at the Iridium Gateway is too large to be 
+       * transferred within a single SBD session
+       */
+      MT_MSG_TOO_LARGE        = 1,
+
+      /**
+       * The SBD Session timed out before session completion
+       */
+      SBD_TIMEOUT             = 10,
+
+      /**
+       * The MO message being transferred by the ISU is too large to be 
+       * transferred within a single SBD session
+       */
+      MO_MSG_TOO_LARGE        = 12,
+
+      /**
+       * A RF link loss occurred during the SBD session
+       */
+      INCOMPLETE_TRANSFER     = 13,
+
+      /**
+       * An ISU protocol anomaly occurred during the SBD session
+       */
+      SBD_PROTOCOL_ERROR      = 14,
+
+      /**
+       * The ISU is not allowed to access the system
+       */
+      SBD_DENIAL              = 15,
+      
+    }
+
   }
 }

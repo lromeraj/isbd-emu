@@ -16,40 +16,40 @@ program.addOption( // TODO: rename
     .makeOptionMandatory() )
 
 program.addOption( 
-  new Option( '-i, --imei <string>', 'customize device IMEI' )
+  new Option( '-i, --imei <string>', 'set modem\'s IMEI' )
     .default( '527695889002193' ) )
 
 program.addOption(
-  new Option( '--smtp-host <string>', 'smtp hostname' ) )
+  new Option( '--smtp-host <string>', 'MO SMTP hostname' ) )
 
 program.addOption(
-  new Option( '--smtp-port <number>', 'smtp port' )
+  new Option( '--smtp-port <number>', 'MO SMTP port' )
     .default( '25' ) )
 
 program.addOption(
-  new Option( '--smtp-user <string>', 'smtp username' ) )
+  new Option( '--smtp-user <string>', 'MO SMTP username' ) )
 
 program.addOption(
-  new Option( '--smtp-password <string>', 'smtp password' ) )
+  new Option( '--smtp-password <string>', 'MO SMTP password' ) )
 
 program.addOption(
-  new Option( '--smtp-from <string>', 'smtp password' ) )
+  new Option( '--smtp-from <string>', 'MO SMTP from address' ) )
 
 program.addOption(
-  new Option( '--smtp-to <string>', 'smtp password' ) )
+  new Option( '--smtp-to <string>', 'MO SMTP destination address' ) )
 
 program.addOption(
-  new Option( '--tcp-host <string>', 'tcp hostname' ) )
+  new Option( '--tcp-host <string>', 'MO TCP hostname' ) )
 
 program.addOption(
-  new Option( '--tcp-port <string>', 'tcp port' ) )
+  new Option( '--tcp-port <string>', 'MO TCP port' ) )
 
 async function main() {
 
   program.parse();
   const opts = program.opts();
 
-  if ( opts.imei.length !== 15 ) {
+  if ( !/[0-9]{15}/.test( opts.imei ) ) {
     logger.error( `Given IMEI is not valid` );
     process.exit( 1 );
   }

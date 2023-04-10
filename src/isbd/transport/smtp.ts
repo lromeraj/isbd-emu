@@ -3,6 +3,7 @@ import nodemailer from "nodemailer";
 import { MOTransport } from ".";
 import { sprintf } from "sprintf-js";
 import Mail from "nodemailer/lib/mailer";
+import { GSS } from "../gss";
 
 export class SMTPTransport extends MOTransport {
 
@@ -22,6 +23,21 @@ export class SMTPTransport extends MOTransport {
     });
   }
 
+  private getStatusFromMsg( msg: MOTransport.Message ): string {
+    const stsText = {
+      [GSS.Session.Status.TRANSFER_OK]: 'Transfer OK',
+      [GSS.Session.Status.MT_MSG_TOO_LARGE]: 'MT Message Too Large',
+      [GSS.Session.Status.SBD_TIMEOUT]: 'SBD Timeout',
+      [GSS.Session.Status.MO_MSG_TOO_LARGE]: 'MO Message Too Large',
+      [GSS.Session.Status.INCOMPLETE_TRANSFER]: 'Incomplete Transfer',
+      [GSS.Session.Status.SBD_PROTOCOL_ERROR]: 'SBD Protocol Error',
+      [GSS.Session.Status.SBD_DENIAL]: 'SBD Denial',
+    };
+    return `${ 
+      String( msg.sessionStatus ).padStart( 2, '0' ) 
+    } - ${ stsText[ msg.sessionStatus ] }`
+  }
+
   private getTextFromMsg( msg: MOTransport.Message ): string {
 
     return  `MOMSN: ${ msg.momsn }\n`
@@ -29,7 +45,7 @@ export class SMTPTransport extends MOTransport {
           + `Time of Session (UTC): ${
               msg.sessionTime.utc().format( 'ddd MMM D HH:mm:ss YYYY' ) 
             }\n`
-          + `Session Status: 00 - Transfer OK\n`
+          + `${ this.getStatusFromMsg( msg ) }\n`
           + `Message Size (bytes): ${ msg.payload.length }\n\n`
           + `Unit Location: Lat = ${
               msg.unitLocation.coord[ 0 ].toFixed( 5 ) 

@@ -20,9 +20,9 @@ export const CMD_CGSN = ATCmd.wrapContext<Modem>( '+cgsn', cmd => {
  */
 export const CMD_SBDTC = ATCmd.wrapContext<Modem>( '+sbdtc', cmd => {
   cmd.onExec( async function( at ) {
-    this.mtData = { ... this.moData };
+    this.mtBuffer = { ... this.moBuffer };
     at.writeLine( `SBDTC: Outbound SBD Copied to Inbound SBD: size = ${ 
-      this.moData.buffer.length 
+      this.moBuffer.buffer.length 
     }` )
   })
 })
@@ -35,7 +35,7 @@ export const CMD_SBDIX = ATCmd.wrapContext<Modem>( '+sbdix', cmd => {
       
     return this.gss.initSession({
       imei: this.imei,
-      payload: this.moData.buffer,
+      payload: this.moBuffer.buffer,
     }).then( session => {
 
       const resp = sprintf( '%s:%d,%d,%d,%d,%d,%d', 
@@ -70,12 +70,12 @@ export const CMD_SBDD = ATCmd.wrapContext<Modem>( '+sbdd', cmd => {
     }
 
     if ( opt === '0' ) {
-      Modem.clearMobileBuffer( this.moData );
+      Modem.clearMobileBuffer( this.moBuffer );
     } else if ( opt === '1' ) {
-      Modem.clearMobileBuffer( this.mtData );
+      Modem.clearMobileBuffer( this.mtBuffer );
     } else if ( opt === '2' ) {
-      Modem.clearMobileBuffer( this.moData );
-      Modem.clearMobileBuffer( this.mtData );
+      Modem.clearMobileBuffer( this.moBuffer );
+      Modem.clearMobileBuffer( this.mtBuffer );
     }
 
     at.writeLine( code.OK );
@@ -91,7 +91,7 @@ export const CMD_SBDD = ATCmd.wrapContext<Modem>( '+sbdd', cmd => {
 export const CMD_SBDRT = ATCmd.wrapContext<Modem>( '+sbdrt', cmd => {
   cmd.onExec( async function ( at ) {
     at.writeLineStart( `${ cmd.name.toUpperCase() }:\r\n` )
-    at.writeRaw( this.mtData.buffer )
+    at.writeRaw( this.mtBuffer.buffer )
   })
 });
 
@@ -104,7 +104,7 @@ export const CMD_SBDWT = ATCmd.wrapContext<Modem>( '+sbdwt', cmd => {
     }
 
     Modem.updateMobileBuffer( 
-      this.moData, Buffer.from( txt ) );
+      this.moBuffer, Buffer.from( txt ) );
 
   })
 
@@ -122,7 +122,7 @@ export const CMD_SBDWT = ATCmd.wrapContext<Modem>( '+sbdwt', cmd => {
 
     return at.readRawUntil( delimiter, 60000 ).then( buffer => {
       Modem.updateMobileBuffer( 
-        this.moData, buffer.subarray( 0, -1 ) );
+        this.moBuffer, buffer.subarray( 0, -1 ) );
       at.writeLine( code.OK );
     }).catch( err => {
       at.writeLine( code.ERR_TIMEOUT );
@@ -140,7 +140,7 @@ export const CMD_SBDRB = ATCmd.wrapContext<Modem>( '+sbdrb', cmd => {
   cmd.onExec( async function( at ) {
   
     let offset = 0;
-    const mtBuf = this.mtData;
+    const mtBuf = this.mtBuffer;
     
     // LENGTH (2 bytes) + MESSAGE (LENGTH bytes) + CHECKSUM (2 bytes)
     const totalLength = 2 + mtBuf.buffer.length + 2;
@@ -188,7 +188,7 @@ export const CMD_SBDWB = ATCmd.wrapContext<Modem>( '+sbdwb', cmd => {
         if ( validateMB( mobBuf ) ) { // message is valid
           
           Modem.updateMobileBuffer( 
-            this.moData, mobBuf.buffer, mobBuf.checksum )
+            this.moBuffer, mobBuf.buffer, mobBuf.checksum )
 
           at.writeLine( code.OK );
 

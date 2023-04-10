@@ -41,15 +41,12 @@ export class Modem {
   gss: GSS;
   at: ATInterface;
 
-  momsn: number = 0;
-  mtmsn: number = 0;
-
-  moData: MobileBuffer = {
+  moBuffer: MobileBuffer = {
     buffer: Buffer.alloc( 0 ),
     checksum: 0,
   };
 
-  mtData: MobileBuffer = {
+  mtBuffer: MobileBuffer = {
     buffer: Buffer.alloc( 0 ),
     checksum: 0,
   };
