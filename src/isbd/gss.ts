@@ -3,6 +3,7 @@ import { MOTransport } from "./transport";
 import * as fastq from "fastq";
 import type { queueAsPromised } from "fastq";
 import moment from "moment";
+import logger from "../logger";
 
 export class GSS {
 
@@ -11,7 +12,7 @@ export class GSS {
 
   private moTransports: MOTransport[];
   private moMsgQueue: queueAsPromised<MOTransport.Message>;
-  private mtMsgQueue: queueAsPromised<MOTransport.Message>;
+  private mtMsgQueue: queueAsPromised<{}>;
 
   constructor( options: GSS.Options ) {
 
@@ -33,8 +34,8 @@ export class GSS {
     this.momsn = ( this.momsn + 1 ) & 0xFFFF;
   }
 
-  private async mtMsgWorker( ) { 
-
+  private async mtMsgWorker() { 
+    
   }
 
   private async moMsgWorker( msg: MOTransport.Message ) {
@@ -52,6 +53,7 @@ export class GSS {
       } else {
         setTimeout( () => {
           this.moMsgQueue.push( msg )
+          logger.de
         }, 30000 ); // TODO: this should be incremental
         throw new Error( `Could not send message` )
       }

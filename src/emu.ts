@@ -5,6 +5,7 @@ import { Argument, Command, Option, program } from "commander";
 import { Modem } from "./isbd/modem";
 import { MOTransport } from "./isbd/transport";
 import { SMTPTransport } from "./isbd/transport/smtp";
+import { TCPTransport } from "./isbd/transport/tcp";
 
 program
   .version( '0.0.2' )
@@ -37,6 +38,12 @@ program.addOption(
 program.addOption(
   new Option( '--smtp-to <string>', 'smtp password' ) )
 
+program.addOption(
+  new Option( '--tcp-host <string>', 'tcp hostname' ) )
+
+program.addOption(
+  new Option( '--tcp-port <string>', 'tcp port' ) )
+
 async function main() {
 
   program.parse();
@@ -61,6 +68,14 @@ async function main() {
     } as SMTPTransport.Options;
     
     moTransports.push( new SMTPTransport( smtpOpts ) );
+  }
+
+  if ( opts.tcpHost && opts.tcpPort ) {
+    const tcpOpts: TCPTransport.Options = {
+      host: opts.tcpHost,
+      port: parseInt( opts.tcpPort ),
+    }
+    moTransports.push( new TCPTransport( tcpOpts ) );
   }
 
   const modem = new Modem({
