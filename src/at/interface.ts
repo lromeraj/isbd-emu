@@ -23,9 +23,9 @@ export class ATInterface {
   private commands: ATCmd<any>[] = [];
   private status: ATIStatus = ATIStatus.WAITING;
 
-  private echo: boolean = false; // TODO: expose echo
-  private quiet: boolean = false; // TODO: expose quiet
-  private verbose: boolean = true; // TODO: expose verbose
+  echo: boolean = false; // TODO: expose echo
+  quiet: boolean = false; // TODO: expose quiet
+  verbose: boolean = true; // TODO: expose verbose
 
   private atCmdStr = '';
   private atCmdMask = 'AT';
@@ -40,9 +40,9 @@ export class ATInterface {
   constructor( serialPortOpts: ATInterface.SerialPortOptions ) {
     
     this.sp = new SerialPort({ 
-      path: serialPortOpts.path, 
-      baudRate: serialPortOpts.baudRate,
-      autoOpen: true,
+      path: serialPortOpts.path || '/dev/null', 
+      baudRate: serialPortOpts.baudRate || 115200,
+      autoOpen: typeof serialPortOpts.path === 'string',
     }, err => {
       if ( err ) {
         logger.error( err.message )
@@ -290,8 +290,8 @@ export class ATInterface {
 
 export namespace ATInterface {
   export interface SerialPortOptions {
-    path: string;
-    baudRate: number;
+    path: string | null;
+    baudRate?: number;
   };
   export type Delimiter = ( currentByte: number, currentBuf: number[] ) => boolean
 }
