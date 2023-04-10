@@ -64,7 +64,9 @@ async function main() {
   }
 
   const modem = new Modem({
-    moTransports,
+    gss: {
+      moTransports 
+    },
     dte: {
       path: opts.path,
     },

@@ -32,11 +32,11 @@ export class SMTPTransport extends MOTransport {
           + `Session Status: 00 - Transfer OK\n`
           + `Message Size (bytes): ${ msg.payload.length }\n\n`
           + `Unit Location: Lat = ${
-              msg.unitLocation[ 0 ].toFixed( 5 ) 
+              msg.unitLocation.coord[ 0 ].toFixed( 5 ) 
             } Long = ${ 
-              msg.unitLocation[ 1 ].toFixed( 5 ) 
+              msg.unitLocation.coord[ 1 ].toFixed( 5 ) 
             }\n`
-          + `CEPRadius = ${ msg.cepRadius.toFixed( 0 ) }`;
+          + `CEPRadius = ${ msg.unitLocation.cepRadius.toFixed( 0 ) }`;
 
   }
 
@@ -46,30 +46,24 @@ export class SMTPTransport extends MOTransport {
 
   private getFilenameFromMsg( msg: MOTransport.Message ): string {
     return `${ msg.imei }_${ 
-      String(msg.momsn).padStart( 6, '0' ) 
+      String( msg.momsn ).padStart( 6, '0' ) 
     }.sbd`;
   }
 
-  protected sendMessage( msg: MOTransport.Message ): Promise<MOTransport.Message> {
+  sendMessage( msg: MOTransport.Message ): Promise<MOTransport.Message> {
 
-    if ( msg.payload.length > 0 ) {
-    
-      return this.transporter.sendMail({
-    
-        text: this.getTextFromMsg( msg ),
-        to: this.options.to || this.options.user,
-        from: this.options.from || this.options.user,
-        subject: this.getSubjectFromMsg( msg ),
-        attachments: [{
-          filename: this.getFilenameFromMsg( msg ),
-          content: msg.payload
-        }]
+    return this.transporter.sendMail({
+  
+      text: this.getTextFromMsg( msg ),
+      to: this.options.to || this.options.user,
+      from: this.options.from || this.options.user,
+      subject: this.getSubjectFromMsg( msg ),
+      attachments: [{
+        filename: this.getFilenameFromMsg( msg ),
+        content: msg.payload
+      }]
 
-      }).then( () => msg );
-    
-    }
-
-    return Promise.resolve( msg );
+    }).then( () => msg );
 
   }
 

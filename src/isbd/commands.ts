@@ -1,4 +1,5 @@
 import moment from "moment";
+import { sprintf } from "sprintf-js";
 import { ATCmd } from "../at/cmd"
 import { ATInterface } from "../at/interface";
 import { computeChecksum, Modem, readMB, validateMB } from "./modem";
@@ -32,34 +33,18 @@ export const CMD_SBDTC = ATCmd.wrapContext<Modem>( '+sbdtc', cmd => {
 export const CMD_SBDIX = ATCmd.wrapContext<Modem>( '+sbdix', cmd => {
   cmd.onExec( async function( at ) {
       
-    // TODO: create a new module named GSS in order to 
-    // TODO: abstract transport functionality
-    const msg: MOTransport.Message = {
+    return this.gss.initSession({
       imei: this.imei,
-      momsn: this.momsn,
-      mtmsn: this.mtmsn,
       payload: this.moData.buffer,
-      sessionTime: moment(),
-      cepRadius: Math.random()*50,
-      unitLocation: [ -90 + Math.random() * 180, -90 + Math.random() * 180 ],
-    }
-    
-    const promises = this.moTransports.map( 
-      transport => transport.enqueueMessage( msg ) )
+    }).then( session => {
 
-    Promise.allSettled( promises ).then( results => {
-      console.log( results )
+      const resp = sprintf( '%s:%d,%d,%d,%d,%d,%d', 
+        cmd.name.toUpperCase(), 
+          session.mosts, session.momsn,
+          session.mtsts, session.mtmsn, session.mtlen, session.mtq )
+      at.writeLine( resp );
+      
     })
-
-    at.writeLine( `${ cmd.name.toUpperCase() }:0,${ 
-      this.momsn 
-    },0,${ 
-      this.mtmsn 
-    },${ 
-      this.mtData.buffer.length 
-    },0` );
-    
-    this.increaseMOMSN();
 
   })
 

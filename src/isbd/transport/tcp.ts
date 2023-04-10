@@ -10,7 +10,7 @@ export class TCPTransport extends MOTransport {
     this.socket = new net.Socket();
   }
 
-  protected sendMessage( msg: MOTransport.Message ): Promise<MOTransport.Message> {
+  sendMessage( msg: MOTransport.Message ): Promise<MOTransport.Message> {
     return Promise.reject();
   }
 

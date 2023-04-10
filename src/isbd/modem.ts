@@ -13,6 +13,7 @@ import {
   CMD_SBDWT 
 } from "./commands";
 import { MOTransport } from "./transport";
+import { GSS } from "./gss";
 
 export interface ModemOptions {
 
@@ -22,8 +23,9 @@ export interface ModemOptions {
     path: string
   };
 
+  gss: GSS.Options;
+
   volatile?: boolean;
-  moTransports: MOTransport[];
 
 }
 
@@ -35,9 +37,9 @@ export interface MobileBuffer {
 export class Modem {
 
   imei: string;
-  at: ATInterface;
 
-  moTransports: MOTransport[];
+  gss: GSS;
+  at: ATInterface;
 
   momsn: number = 0;
   mtmsn: number = 0;
@@ -53,13 +55,13 @@ export class Modem {
   };
   
   constructor( options: ModemOptions ) {
+    
+    this.gss = new GSS( options.gss );
 
     this.at = new ATInterface({
       baudRate: 19200,
       path: options.dte.path,
     });
-
-    this.moTransports = options.moTransports;
 
     this.imei = options.imei || '527695889002193';
 
@@ -77,13 +79,7 @@ export class Modem {
 
   }
 
-  increaseMTMSN() {
-    this.mtmsn = ( this.mtmsn + 1 ) & 0xFFFF;
-  }
 
-  increaseMOMSN() {
-    this.momsn = ( this.momsn + 1 ) & 0xFFFF;
-  }
 
   static clearMobileBuffer( mobBuf: MobileBuffer ) {
     mobBuf.checksum = 0;
