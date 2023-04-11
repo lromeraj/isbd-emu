@@ -1,48 +1,35 @@
 import colors from "colors";
-import logger from "./logger";
+import logger from "../logger";
 import { SerialPort } from "serialport"
 import { Argument, Command, Option, program } from "commander";
-import { Modem } from "./isbd/modem";
-import { MOTransport } from "./isbd/transport";
-import { SMTPTransport } from "./isbd/transport/smtp";
-import { TCPTransport } from "./isbd/transport/tcp";
+import { Modem } from "../iridium/su/960x";
+import { MOTransport } from "../iridium/gss/transport";
+import { SMTPTransport } from "../iridium/gss/transport/smtp";
+import { TCPTransport } from "../iridium/gss/transport/tcp";
 
 program
-  .version( '0.0.2' )
-  .description( 'A simple emulator for Iridium SBD 9602/9602 transceivers' )
+  .version( '0.0.5' )
+  .description( 'A simple emulator for Iridium SBD 960X transceivers' )
 
 program.addOption( // TODO: rename
   new Option( '-p, --path <string>', 'serial port path' )
     .makeOptionMandatory() )
 
 program.addOption( 
-  new Option( '-i, --imei <string>', 'set modem\'s IMEI' )
+  new Option( '-i, --imei <string>', 'set ISU IMEI' )
     .default( '527695889002193' ) )
 
 program.addOption(
-  new Option( '--smtp-host <string>', 'MO SMTP hostname' ) )
+  new Option( '--gss-host <string>', 'GSS Socket host' )
+    .default( 'localhost' ) )
 
 program.addOption(
-  new Option( '--smtp-port <number>', 'MO SMTP port' )
-    .default( '25' ) )
+  new Option( '--gss-port <string>', 'GSS Socket port' )
+    .default( 10801 ).argParser( v => parseInt( v ) ) )
 
 program.addOption(
-  new Option( '--smtp-user <string>', 'MO SMTP username' ) )
-
-program.addOption(
-  new Option( '--smtp-password <string>', 'MO SMTP password' ) )
-
-program.addOption(
-  new Option( '--smtp-from <string>', 'MO SMTP from address' ) )
-
-program.addOption(
-  new Option( '--smtp-to <string>', 'MO SMTP destination address' ) )
-
-program.addOption(
-  new Option( '--tcp-host <string>', 'MO TCP hostname' ) )
-
-program.addOption(
-  new Option( '--tcp-port <string>', 'MO TCP port' ) )
+  new Option( '--gss-uri <string>', 'GSS Socket URI' )
+  .conflicts([ 'gssPort', 'gssHost' ]) )
 
 async function main() {
 
@@ -60,10 +47,9 @@ async function main() {
 
     const smtpOpts = {
       host: opts.smtpHost,
-      port: parseInt( opts.smtpPort ),
+      port: opts.smtpPort,
       user: opts.smtpUser,
       password: opts.smtpPassword,
-      from: opts.smtpFrom,
       to: opts.smtpTo,
     } as SMTPTransport.Options;
     
@@ -73,14 +59,15 @@ async function main() {
   if ( opts.tcpHost && opts.tcpPort ) {
     const tcpOpts: TCPTransport.Options = {
       host: opts.tcpHost,
-      port: parseInt( opts.tcpPort ),
+      port: opts.tcpPort,
     }
     moTransports.push( new TCPTransport( tcpOpts ) );
   }
 
   const modem = new Modem({
     gss: {
-      moTransports 
+      port: opts.gssPort,
+      host: opts.gssHost,
     },
     dte: {
       path: opts.path,

@@ -1,7 +1,7 @@
 import moment, { Moment } from "moment";
 
-import logger from "../../logger";
-import type { GSS } from "../gss";
+import logger from "../../../logger";
+import type { GSS } from "..";
 
 export abstract class MOTransport {
 
@@ -15,14 +15,6 @@ export abstract class MOTransport {
 
 export namespace MOTransport {
 
-  export namespace Message {
-    
-    export interface UnitLocation {
-      coord: [ number, number ];
-      cepRadius: number;
-    }
-
-  }
   export interface Message {
     imei: string;
     momsn: number; 
@@ -30,6 +22,6 @@ export namespace MOTransport {
     payload: Buffer;
     sessionTime: Moment;
     sessionStatus: GSS.Session.Status;
-    unitLocation: Message.UnitLocation;
+    unitLocation: GSS.UnitLocation;
   }
 }

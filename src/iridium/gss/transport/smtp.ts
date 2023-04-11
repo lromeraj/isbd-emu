@@ -3,7 +3,7 @@ import nodemailer from "nodemailer";
 import { MOTransport } from ".";
 import { sprintf } from "sprintf-js";
 import Mail from "nodemailer/lib/mailer";
-import { GSS } from "../gss";
+import { GSS } from "..";
 
 export class SMTPTransport extends MOTransport {
 
@@ -21,6 +21,7 @@ export class SMTPTransport extends MOTransport {
         pass: options.password,
       }
     });
+
   }
 
   private getStatusFromMsg( msg: MOTransport.Message ): string {
@@ -69,10 +70,9 @@ export class SMTPTransport extends MOTransport {
   sendMessage( msg: MOTransport.Message ): Promise<MOTransport.Message> {
 
     return this.transporter.sendMail({
-  
+
       text: this.getTextFromMsg( msg ),
       to: this.options.to || this.options.user,
-      from: this.options.from || this.options.user,
       subject: this.getSubjectFromMsg( msg ),
       attachments: [{
         filename: this.getFilenameFromMsg( msg ),
@@ -91,7 +91,6 @@ export namespace SMTPTransport {
     port?: number;
     user: string;
     password?: string;
-    from?: string;
     to?: string;
   }
  }

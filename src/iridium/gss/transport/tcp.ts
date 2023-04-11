@@ -1,6 +1,6 @@
 import colors from "colors";
 import net, { Socket } from "net";
-import logger from "../../logger";
+import logger from "../../../logger";
 import { MOTransport } from ".";
 
 
