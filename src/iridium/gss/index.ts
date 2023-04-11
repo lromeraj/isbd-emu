@@ -8,6 +8,7 @@ import http from "http";
 import sio from "socket.io";
 import colors from "colors";
 import net from "net";
+import { SUServer } from "./servers/su";
 
 interface SubscriberUnit {
   momsn: number;
@@ -22,52 +23,23 @@ export class GSS {
     [key: string]: SubscriberUnit 
   } = {};
   
-  private mtServer: net.Server;
   
-  private httpServer: http.Server;
-  private socketServer: sio.Server;
+  // TODO: do the same for MT server
+  private suServer: SUServer;
+  private mtServer: net.Server;
 
   private moTransports: MOTransport[];
-
+  
   private mtSocketQueue: queueAsPromised<net.Socket>;
 
   constructor( options: GSS.Options ) {
 
     this.moTransports = options.moTransports;
 
+    this.suServer = new SUServer( options.suServer );
 
-    this.httpServer = http.createServer()
-    this.socketServer = new sio.Server( this.httpServer );
-    
-    this.httpServer.listen( options.isuServerPort, () => {
-      logger.success( `SU server ready, port=${
-        colors.yellow( options.isuServerPort.toString() )
-      }` );
-    })
-
-    this.socketServer.on( 'connect', socket => {
-      
-      const imei = socket.handshake.query.imei; 
-
-      if ( typeof imei === 'string' ) {
-
-        socket.on( 'initSession', (
-          sessionReq: GSS.SessionRequest, 
-          callback: ( sessionResp: GSS.SessionResponse ) => void 
-        ) => {
-          this.initSession( sessionReq ).then( callback )
-        })
-        
-        socket.on( 'disconnect', () => {
-          logger.debug( `ISU ${ colors.bold( imei ) } disconnected` );
-        })
-
-        logger.debug( `ISU ${ colors.bold( imei ) } connected` );
-
-      } else {
-        socket.disconnect();
-      }
-      
+    this.suServer.on( 'initSession', ( req, callback ) => {
+      this.initSession( req ).then( callback );
     })
 
     this.mtSocketQueue = fastq.promise( 
@@ -81,9 +53,7 @@ export class GSS {
       }` );
     })
 
-    this.mtServer.on( 'connection', socket => { 
-
-      
+    this.mtServer.on( 'connection', socket => {       
       this.mtSocketQueue.push( socket );
     })
 
@@ -97,12 +67,64 @@ export class GSS {
 
   }
 
-  private increaseMTMSN( isu: SubscriberUnit  ) {
-    isu.mtmsn = ( isu.mtmsn + 1 ) & 0xFFFF;
-  }
+  // private increaseMTMSN( isu: SubscriberUnit  ) {
+  //   isu.mtmsn = ( isu.mtmsn + 1 ) & 0xFFFF;
+  // }
 
-  private async mtMsgWorker( buffer: net.Socket ) { 
+  private async mtMsgWorker( socket: net.Socket ) { 
     
+    const maxMsgLen = 512; // bytes
+    const socketTimeout = 5000; // milliseconds
+
+    let bytesRead = 0;
+    let bytesToRead = maxMsgLen; // this works as a maximum limit too
+    let buffersRead: Buffer[] = []
+    let headerBuffer: Buffer | null = null;
+
+    socket.setTimeout( socketTimeout );
+
+    socket.on( 'timeout', () => {
+      socket.destroy();
+    })
+
+    socket.on( 'data', buffer => {
+      
+      buffersRead.push( buffer );
+      bytesRead += buffer.length;
+
+      if ( headerBuffer === null && bytesRead >= 3 ) { // wait for at least three bytes
+        
+        headerBuffer = buffersRead.length > 1
+          ? Buffer.concat( buffersRead )
+          : buffersRead[ 0 ]
+
+        buffersRead = []
+
+        const protoRev = headerBuffer.readUint8( 0 );
+        const msgLen = headerBuffer.readUint16BE( 1 );
+        
+        if ( protoRev === 0x01 && msgLen <= maxMsgLen ) {
+          // OVERALL MSG HEADER + MSG LEN
+          //       3 bytes        N bytes = 3 + N
+          bytesToRead = 3 + msgLen;
+        } else {
+          socket.destroy();
+          return;
+        }
+
+      }
+
+      if ( bytesRead === bytesToRead ) {
+        // TODO: parse message
+
+        // socket.write()
+      } else if ( bytesRead > bytesRead ) {
+        socket.destroy();
+        return;
+      }
+
+
+    })
 
   }
 
@@ -211,8 +233,8 @@ export class GSS {
 export namespace GSS {
 
   export interface Options {
-    isuServerPort: number;
     mtServerPort: number;
+    suServer: SUServer.Options;
     moTransports: MOTransport[];
   }
 

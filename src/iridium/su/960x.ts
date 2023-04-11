@@ -12,11 +12,9 @@ import {
   CMD_SBDWB, 
   CMD_SBDWT 
 } from "./commands";
-import { MOTransport } from "../gss/transport";
 import { GSS } from "../gss";
 
 import * as sio from "socket.io-client";
-
 
 export interface ModemOptions {
 

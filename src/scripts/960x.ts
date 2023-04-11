@@ -1,11 +1,7 @@
 import colors from "colors";
 import logger from "../logger";
-import { SerialPort } from "serialport"
 import { Argument, Command, Option, program } from "commander";
 import { Modem } from "../iridium/su/960x";
-import { MOTransport } from "../iridium/gss/transport";
-import { SMTPTransport } from "../iridium/gss/transport/smtp";
-import { TCPTransport } from "../iridium/gss/transport/tcp";
 
 program
   .version( '0.0.5' )
@@ -39,29 +35,6 @@ async function main() {
   if ( !/[0-9]{15}/.test( opts.imei ) ) {
     logger.error( `Given IMEI is not valid` );
     process.exit( 1 );
-  }
-
-  const moTransports: MOTransport[] = []
-
-  if ( opts.smtpUser && opts.smtpHost ) {
-
-    const smtpOpts = {
-      host: opts.smtpHost,
-      port: opts.smtpPort,
-      user: opts.smtpUser,
-      password: opts.smtpPassword,
-      to: opts.smtpTo,
-    } as SMTPTransport.Options;
-    
-    moTransports.push( new SMTPTransport( smtpOpts ) );
-  }
-
-  if ( opts.tcpHost && opts.tcpPort ) {
-    const tcpOpts: TCPTransport.Options = {
-      host: opts.tcpHost,
-      port: opts.tcpPort,
-    }
-    moTransports.push( new TCPTransport( tcpOpts ) );
   }
 
   const modem = new Modem({

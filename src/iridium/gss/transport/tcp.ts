@@ -1,11 +1,8 @@
 import colors from "colors";
 import net, { Socket } from "net";
-import logger from "../../../logger";
+
 import { MOTransport } from ".";
-
-
-
-
+import logger from "../../../logger";
 
 export class TCPTransport extends MOTransport {
 
@@ -109,7 +106,7 @@ export class TCPTransport extends MOTransport {
         reject();
       }
 
-      const completeSending = ( cli: Socket ) => {
+      const resolveSending = ( cli: Socket ) => {
         cli.end();
         resolve( msg );
       }
@@ -119,23 +116,17 @@ export class TCPTransport extends MOTransport {
         port: this.options.port,
       }, () => {
         client.write( this.encodeMessage( msg ), () => { 
-          completeSending( client );
+          resolveSending( client );
         });
       })
 
       client.setTimeout( 5000 );
 
       client.on( 'timeout', () => {
-        logger.error( `TCPTransport timed out for momsn=${ 
-          colors.yellow( msg.momsn.toString() ) 
-        }`)
         rejectSending( client );
       })
 
       client.on( 'error', () => {
-        logger.error( `TCPTransport failed for momsn=${ 
-          colors.yellow( msg.momsn.toString() ) 
-        }`)
         rejectSending( client );
       });
 

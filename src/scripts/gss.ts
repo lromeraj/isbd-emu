@@ -81,7 +81,9 @@ async function main() {
   const gss = new GSS({ // gss instance
     moTransports,
     mtServerPort: opts.mtServerPort,
-    isuServerPort: opts.suServerPort,
+    suServer: {
+      port: opts.suServerPort
+    },
   })
 
 }

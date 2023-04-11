@@ -1,7 +1,6 @@
 import moment, { Moment } from "moment";
 
-import logger from "../../../logger";
-import type { GSS } from "..";
+import type { GSS } from "../index";
 
 export abstract class MOTransport {
 

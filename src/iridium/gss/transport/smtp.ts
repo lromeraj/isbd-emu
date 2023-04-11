@@ -1,9 +1,8 @@
-import moment from "moment";
 import nodemailer from "nodemailer";
+
+
 import { MOTransport } from ".";
-import { sprintf } from "sprintf-js";
-import Mail from "nodemailer/lib/mailer";
-import { GSS } from "..";
+import { GSS } from "../index";
 
 export class SMTPTransport extends MOTransport {
 
