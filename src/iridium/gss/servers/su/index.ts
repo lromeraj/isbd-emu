@@ -50,8 +50,8 @@ export class SUServer extends EventEmitter {
           callback: ( sessionResp: GSS.SessionResponse ) => void 
         ) => {
 
+          // TODO: we could use a direct handler instead of using events ...
           this.emit( 'initSession', sessionReq, callback );
-          // this.initSession( sessionReq ).then( callback )
         })
         
         socket.on( 'disconnect', () => {
