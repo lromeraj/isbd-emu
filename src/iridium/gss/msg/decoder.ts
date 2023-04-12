@@ -167,5 +167,3 @@ export function decodeMtMessage(
 
   return msg as Required<Message.MT>;
 }
-
-
