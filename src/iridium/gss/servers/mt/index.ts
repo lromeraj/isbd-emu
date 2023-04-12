@@ -6,6 +6,7 @@ import logger from "../../../../logger";
 import fastq, { queueAsPromised } from "fastq";
 import { buffer } from "stream/consumers";
 import { TCPTransport } from "../../transport/tcp";
+import { decodeMtMessage } from "../../msg/decoder";
 
 export class MTServer extends EventEmitter {
 
@@ -41,11 +42,11 @@ export class MTServer extends EventEmitter {
       colors.yellow( buffer.length.toString() ) 
     }` );
 
-    const decodedMsg = this.decode( buffer );
+    const mtMsg = decodeMtMessage( buffer );
       
-    if ( decodedMsg ) {
+    if ( mtMsg ) {
       if ( this.transport ) {
-        this.transport.sendMessage( decodedMsg, 
+        this.transport.sendMessage( mtMsg, 
           this.encodeConfirmation.bind( this ) );
       } else {
         logger.error( `Could not send MT confirmation, TCP transport is not defined` );
@@ -124,67 +125,6 @@ export class MTServer extends EventEmitter {
     return Buffer.from([]);
   }
 
-  private decodePayload(
-    msg: MTServer.Message, buffer: Buffer, offset: number
-  ): number {
-
-    const id = buffer.readUint8( offset );
-    const length = buffer.readUint16BE( offset + 1 );
-
-    msg.mtPayload = {
-      id,
-      length,
-      payload: buffer.subarray( offset + 3, offset + 3 + length )
-    }
-    
-    // InformationElement  +  MT Payload
-    //     3 (bytes)       +  N (bytes) = 3 + N bytes
-    return 3 + length;
-  }
-
-  private decodeHeader( 
-    msg: MTServer.Message, buffer: Buffer, offset: number 
-  ): number {
-
-    msg.mtHeader = {
-      id: buffer.readUint8( offset ),
-      length: buffer.readUint16BE( offset + 1 ),
-      ucmid: buffer.subarray( offset + 3, offset + 7 ),
-      imei: buffer.subarray( offset + 7, offset + 22 ).toString( 'ascii' ),
-      flags: buffer.readUint16BE( offset + 22 ),
-    }
-    
-    // InformationElement  +  MT Header
-    //     3 (bytes)       +  21 (bytes) = 24 bytes
-    return 24;
-  }
-
-  private decode(
-    buf: Buffer,
-  ): MTServer.Message | null {
-    
-    const protoRev = buf.readUint8( 0 );
-    const length = buf.readUint16BE( 1 );
-    
-    const msg: MTServer.Message = {
-      length,
-      protoRev,
-    };
-    
-    let offset: number = 3;
-    
-    for ( ; offset < buf.length; ) {
-      if ( buf[ offset ] === 0x41 ) {
-        offset += this.decodeHeader( msg, buf, offset );
-      } else if ( buf[ offset ] === 0x42 ) {
-        offset += this.decodePayload( msg, buf, offset );
-      } else {
-        return null;
-      }
-    }
-
-    return msg;
-  }
 }
 
 export namespace MTServer {

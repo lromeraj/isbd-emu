@@ -4,8 +4,8 @@
   "description": "A simple emulator for Iridium SBD 9602/9603 transceivers",
   "main": "index.js",
   "scripts": {
-    "build": "npm i && rm -rf build/ && tsc",
     "test": "jest",
+    "build": "rm -rf build/ && tsc",
     "prepare": "npm run build"
   },
   "keywords": [

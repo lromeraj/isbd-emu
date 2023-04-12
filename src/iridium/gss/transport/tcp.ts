@@ -2,7 +2,7 @@ import colors from "colors";
 import net, { Socket } from "net";
 
 import { Transport } from ".";
-import logger from "../../../logger";
+import { encodeMoMsg } from "../msg/encoder";
 
 export class TCPTransport extends Transport {
 
@@ -61,91 +61,33 @@ export class TCPTransport extends Transport {
   }
 
   sendSessionMessage( 
-    msg: Transport.SessionMessage
+    sessionMsg: Transport.SessionMessage
   ): Promise<Transport.SessionMessage> {
-    return this.sendMessage( msg, this.encSessionMsg.bind( this ) );
+    return this.sendMessage( sessionMsg, 
+      this.encodeSessionMessage.bind( this ) );
   }
 
-  private encSessionMsgHeader( msg: Transport.SessionMessage ): Buffer {
-    
-    const IE_ID = 0x01;
-    const IE_LEN = 28;
+  private encodeSessionMessage( msg: Transport.SessionMessage ): Buffer {
 
-    const buffer = Buffer.alloc( 3 + IE_LEN );
+    return encodeMoMsg({
+      header: {
+        cdr: 0, // TODO: set CDR accordingly
+        momsn: msg.momsn,
+        mtmsn: msg.mtmsn,
+        imei: msg.imei,
+        status: msg.status,
+        time: msg.time,
+      },
+      location: {
+        latitude: msg.location.coord[ 0 ],
+        longitude: msg.location.coord[ 1 ],
+        cepRadius: msg.location.cepRadius,
+      },
+      payload: {
+        payload: msg.payload,
+      }
 
-    let offset = 0;
-    offset = buffer.writeUint8( IE_ID, offset );
-    offset = buffer.writeUint16BE( IE_LEN, offset );
-    offset = buffer.writeUint32BE( 0, offset ); // TODO: set CDR accordingly
-    offset += buffer.write( msg.imei, offset, 15, 'ascii' );
-    offset = buffer.writeUint8( msg.status, offset );
-    offset = buffer.writeUint16BE( msg.momsn, offset );
-    offset = buffer.writeUint16BE( msg.mtmsn, offset );
-    offset = buffer.writeUint32BE( msg.time.unix(), offset );
-
-    return buffer;
-  }
-
-  private encSessionMsgPayload( msg: Transport.SessionMessage ): Buffer {
-
-    const IE_ID = 0x02;
-    const IE_LEN = msg.payload.length;
-    const buffer = Buffer.alloc( 3 + IE_LEN );
-    
-    let offset = 0;
-    offset = buffer.writeUInt8( IE_ID, offset );
-    offset = buffer.writeUint16BE( IE_LEN, offset );
-    offset += msg.payload.copy( buffer, offset );
-
-    return buffer;
-  }
-
-  private encSessionMsgLocation( msg: Transport.SessionMessage ): Buffer {
-
-    const IE_ID = 0x03;
-    const IE_LEN = 11;
-
-    const buffer = Buffer.alloc( 3 + IE_LEN );
-
-    const nsi = Number( msg.location.coord[ 0 ] < 0 ) << 1
-    const ewi = Number( msg.location.coord[ 1 ] < 0 )
-    
-    const latDeg = Math.abs( Math.trunc( msg.location.coord[ 0 ] ) )
-    const lonDeg = Math.abs( Math.trunc( msg.location.coord[ 1 ] ) )
-
-    let latThoMin = Math.abs( msg.location.coord[ 0 ] ) % 1 
-    let lonThoMin = Math.abs( msg.location.coord[ 1 ] ) % 1 
-    
-    latThoMin = Math.round( latThoMin * 60000 )
-    lonThoMin = Math.round( lonThoMin * 60000 )
-
-    let offset = 0;
-    offset = buffer.writeUint8( IE_ID, offset );
-    offset = buffer.writeUint16BE( IE_LEN, offset );
-    offset = buffer.writeUint8( nsi | ewi, offset );
-    offset = buffer.writeUint8( latDeg, offset );
-    offset = buffer.writeUint16BE( latThoMin, offset );
-    offset = buffer.writeUint8( lonDeg, offset );
-    offset = buffer.writeUint16BE( lonThoMin, offset );
-    offset = buffer.writeUint32BE( msg.location.cepRadius, offset );
-
-    return buffer;
-  }
-
-  private encSessionMsg( msg: Transport.SessionMessage ): Buffer {
-    
-    const protoHeaderBuf = Buffer.alloc( 3 );
-    const headerBuf = this.encSessionMsgHeader( msg );
-    const locationBuf = this.encSessionMsgLocation( msg );
-    const payloadBuf = this.encSessionMsgPayload( msg );
-
-    let offset = 0;
-    offset = protoHeaderBuf.writeUint8( 0x01, offset );
-    offset = protoHeaderBuf.writeUint16BE(
-      headerBuf.length + locationBuf.length + payloadBuf.length, offset );
-
-    return Buffer.concat([ 
-      protoHeaderBuf, headerBuf, locationBuf, payloadBuf ]);
+    })
 
   }
 

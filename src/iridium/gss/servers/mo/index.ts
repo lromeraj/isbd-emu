@@ -22,19 +22,19 @@ import { GSS } from "../..";
 //   ): this;
 // }
 
-export class SUServer extends EventEmitter {
+export class MOServer extends EventEmitter {
 
   private httpServer: http.Server;
   private socketServer: sio.Server;
 
-  private handlers: SUServer.Handlers;
+  private handlers: MOServer.Handlers;
 
-  constructor( options: SUServer.Options ) {
+  constructor( options: MOServer.Options ) {
     
     super();
 
     this.handlers = {
-      initSession: () => Promise.reject(new Error('Not implemented'))
+      initSession: () => Promise.reject( new Error('Not implemented') )
     }
 
     Object.assign( this.handlers, options.handlers );
@@ -81,7 +81,7 @@ export class SUServer extends EventEmitter {
 }
 
 
-export namespace SUServer {
+export namespace MOServer {
 
   export interface Handlers {
     initSession: InitSessionHandler;

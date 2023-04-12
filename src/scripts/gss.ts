@@ -40,7 +40,7 @@ program.addOption(
     .default( 10800 ).argParser( v => parseInt( v ) ) )
 
 program.addOption(
-  new Option( '--su-server-port <number>', 'SU server port' )
+  new Option( '--mo-server-port <number>', 'MO server port' )
     .default( 10801 ).argParser( v => parseInt( v ) ) )
 
 // program.addOption(
@@ -91,7 +91,7 @@ async function main() {
       transport: tcpTransport,
     },
     suServer: {
-      port: opts.suServerPort
+      port: opts.moServerPort
     },
   })
 

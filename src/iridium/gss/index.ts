@@ -5,7 +5,7 @@ import type { queueAsPromised } from "fastq";
 import moment from "moment";
 import logger from "../../logger";
 import colors from "colors";
-import { SUServer } from "./servers/su";
+import { MOServer } from "./servers/mo";
 import { MTServer } from "./servers/mt";
 import { TCPTransport } from "./transport/tcp";
 
@@ -13,7 +13,7 @@ interface SubscriberUnit {
   momsn: number;
   mtmsn: number;
   location: GSS.UnitLocation;
-  moMsgQueue: queueAsPromised<Transport.SessionMessage>;
+  sessionMsgQueue: queueAsPromised<Transport.SessionMessage>;
 }
  
 export class GSS {
@@ -26,7 +26,7 @@ export class GSS {
    * This server is to allow emulated ISUs to coomunicate
    * with the GSS
    */
-  private suServer: SUServer;
+  private suServer: MOServer;
 
   /**
    * This server is used to handle incoming MT message requests
@@ -36,13 +36,13 @@ export class GSS {
   /**
    * This transports are used for every MO message sent by ISUs
    */
-  private moTransports: Transport[];
+  private transports: Transport[];
   
   constructor( options: GSS.Options ) {
 
-    this.moTransports = options.transports;
+    this.transports = options.transports;
 
-    this.suServer = new SUServer({
+    this.suServer = new MOServer({
       port: options.suServer.port,
       handlers: {
         initSession: this.initSession.bind( this )
@@ -54,28 +54,22 @@ export class GSS {
       transport: options.mtServer.transport,
     });
 
-    /*
-    this.moMsgQueue = fastq.promise( 
-      this.moMsgWorker.bind( this ), 1 );
-    
-    this.mtMsgQueue = fastq.promise(
-      this.mtMsgWorker.bind( this ), 1 );
-    */
-
   }
 
   // private increaseMTMSN( isu: SubscriberUnit  ) {
   //   isu.mtmsn = ( isu.mtmsn + 1 ) & 0xFFFF;
   // }
 
-  private async moMsgWorker( msg: Transport.SessionMessage ) {
+  private async sessionMsgWorker( msg: Transport.SessionMessage ) {
 
-    const promises = this.moTransports.map(
+    const promises = this.transports.map(
       transport => transport.sendSessionMessage( msg ) );
-    
 
     return Promise.allSettled( promises ).then( results => {
-
+      
+      // If there is at least one transport that was able to transmit
+      // the session message, there is no need to retry for every available
+      // transports, this is the expected Iridium behavior
       const msgSent = 
         results.some( res => res.status === 'fulfilled' )
 
@@ -92,7 +86,7 @@ export class GSS {
       } else {
         
         setTimeout( () => {
-          this.subscriberUnits[ msg.imei ].moMsgQueue.push( msg )
+          this.subscriberUnits[ msg.imei ].sessionMsgQueue.push( msg )
         }, 30000 ); // TODO: this should be incremental
         
         logger.error( `MO #${
@@ -117,8 +111,8 @@ export class GSS {
         momsn: 0,
         mtmsn: 0,
         location: this.generateUnitLocation(),
-        moMsgQueue: fastq.promise(
-          this.moMsgWorker.bind( this ), 1 )
+        sessionMsgQueue: fastq.promise(
+          this.sessionMsgWorker.bind( this ), 1 )
       }
     }
 
@@ -154,7 +148,7 @@ export class GSS {
         status: GSS.Session.Status.TRANSFER_OK,
       }
       
-      isu.moMsgQueue.push( transportMsg );      
+      isu.sessionMsgQueue.push( transportMsg );      
     }
 
     sessionResp.mosts = 0;

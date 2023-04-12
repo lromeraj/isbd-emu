@@ -13,7 +13,7 @@ test:
   stage: test
   timeout: 1 minutes
   script:
-    - npm run build
+    - npm i
     - npm run test
   tags:
     - isbd-emulator
