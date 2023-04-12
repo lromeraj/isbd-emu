@@ -4,11 +4,9 @@ import * as fastq from "fastq";
 import type { queueAsPromised } from "fastq";
 import moment from "moment";
 import logger from "../../logger";
-import http from "http";
-import sio from "socket.io";
 import colors from "colors";
-import net from "net";
 import { SUServer } from "./servers/su";
+import { MTServer } from "./servers/mt";
 
 interface SubscriberUnit {
   momsn: number;
@@ -20,42 +18,39 @@ interface SubscriberUnit {
 export class GSS {
 
   private subscriberUnits: { 
-    [key: string]: SubscriberUnit 
+    [key: string]: SubscriberUnit
   } = {};
   
-  
-  // TODO: do the same for MT server
+  /**
+   * This server is to allow emulated ISUs to coomunicate
+   * with the GSS
+   */
   private suServer: SUServer;
-  private mtServer: net.Server;
 
+  /**
+   * This server is used to handle incoming MT message requests
+   */
+  private mtServer: MTServer;
+
+  /**
+   * This transports are used for every MO message sent by ISUs
+   */
   private moTransports: MOTransport[];
   
-  private mtSocketQueue: queueAsPromised<net.Socket>;
-
   constructor( options: GSS.Options ) {
 
     this.moTransports = options.moTransports;
 
-    this.suServer = new SUServer( options.suServer );
+    this.suServer = new SUServer({
+      port: options.suServer.port,
+      handlers: {
+        initSession: this.initSession.bind( this )
+      }
+    });
 
-    this.suServer.on( 'initSession', ( req, callback ) => {
-      this.initSession( req ).then( callback );
-    })
-
-    this.mtSocketQueue = fastq.promise( 
-      this.mtMsgWorker.bind( this ), 1 )
-
-    this.mtServer = net.createServer();
-
-    this.mtServer.listen( options.mtServerPort, () => {
-      logger.success( `MT server ready, port=${
-        colors.yellow( options.mtServerPort.toString() )
-      }` );
-    })
-
-    this.mtServer.on( 'connection', socket => {       
-      this.mtSocketQueue.push( socket );
-    })
+    this.mtServer = new MTServer({
+      port: options.mtServer.port
+    });
 
     /*
     this.moMsgQueue = fastq.promise( 
@@ -71,67 +66,11 @@ export class GSS {
   //   isu.mtmsn = ( isu.mtmsn + 1 ) & 0xFFFF;
   // }
 
-  private async mtMsgWorker( socket: net.Socket ) { 
-    
-    const maxMsgLen = 512; // bytes
-    const socketTimeout = 5000; // milliseconds
-
-    let bytesRead = 0;
-    let bytesToRead = maxMsgLen; // this works as a maximum limit too
-    let buffersRead: Buffer[] = []
-    let headerBuffer: Buffer | null = null;
-
-    socket.setTimeout( socketTimeout );
-
-    socket.on( 'timeout', () => {
-      socket.destroy();
-    })
-
-    socket.on( 'data', buffer => {
-      
-      buffersRead.push( buffer );
-      bytesRead += buffer.length;
-
-      if ( headerBuffer === null && bytesRead >= 3 ) { // wait for at least three bytes
-        
-        headerBuffer = buffersRead.length > 1
-          ? Buffer.concat( buffersRead )
-          : buffersRead[ 0 ]
-
-        buffersRead = []
-
-        const protoRev = headerBuffer.readUint8( 0 );
-        const msgLen = headerBuffer.readUint16BE( 1 );
-        
-        if ( protoRev === 0x01 && msgLen <= maxMsgLen ) {
-          // OVERALL MSG HEADER + MSG LEN
-          //       3 bytes        N bytes = 3 + N
-          bytesToRead = 3 + msgLen;
-        } else {
-          socket.destroy();
-          return;
-        }
-
-      }
-
-      if ( bytesRead === bytesToRead ) {
-        // TODO: parse message
-
-        // socket.write()
-      } else if ( bytesRead > bytesRead ) {
-        socket.destroy();
-        return;
-      }
-
-
-    })
-
-  }
-
   private async moMsgWorker( msg: MOTransport.Message ) {
 
     const promises = this.moTransports.map(
       transport => transport.sendMessage( msg ) );
+    
 
     return Promise.allSettled( promises ).then( results => {
 
@@ -160,7 +99,7 @@ export class GSS {
           colors.bold( msg.imei ) 
         }`)
 
-        throw new Error( `Could not send message` )
+        return Promise.reject();
       }
 
     })
@@ -199,8 +138,6 @@ export class GSS {
       mtq: 0,
     }
     
-    
-    
     if ( sessionReq.mo.length > 0 ) {
 
       const transportMsg: MOTransport.Message = {
@@ -218,6 +155,7 @@ export class GSS {
 
     sessionResp.mosts = 0;
 
+
     return sessionResp;
   }
 
@@ -233,8 +171,12 @@ export class GSS {
 export namespace GSS {
 
   export interface Options {
-    mtServerPort: number;
-    suServer: SUServer.Options;
+    mtServer: {
+      port: number;
+    };
+    suServer: { 
+      port: number;
+    };
     moTransports: MOTransport[];
   }
 

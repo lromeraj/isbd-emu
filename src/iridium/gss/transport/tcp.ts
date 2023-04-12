@@ -101,33 +101,33 @@ export class TCPTransport extends MOTransport {
     
     return new Promise(( resolve, reject ) => {
 
-      const rejectSending = ( cli: Socket ) => {
-        cli.destroy();
-        reject();
-      }
-
-      const resolveSending = ( cli: Socket ) => {
-        cli.end();
-        resolve( msg );
-      }
-
       const client = new net.Socket().connect({
         host: this.options.host,
         port: this.options.port,
       }, () => {
-        client.write( this.encodeMessage( msg ), () => { 
-          resolveSending( client );
+        client.write( this.encodeMessage( msg ), () => {
+          resolveSending();
         });
       })
+
+      const rejectSending = ( err: Error ) => {
+        client.destroy();
+        reject( err );
+      }
+
+      const resolveSending = () => {
+        client.end();
+        resolve( msg );
+      }
 
       client.setTimeout( 5000 );
 
       client.on( 'timeout', () => {
-        rejectSending( client );
+        rejectSending( new Error( 'Connection timeout' ) );
       })
 
-      client.on( 'error', () => {
-        rejectSending( client );
+      client.on( 'error', err => {
+        rejectSending( err );
       });
 
     }) 

@@ -12,24 +12,33 @@ import { GSS } from "../..";
 
 
 // https://stackoverflow.com/a/39145058
-export declare interface SUServer {
-  on(
-    event: 'initSession', 
-    listener: (
-      req: GSS.SessionRequest, 
-      callback: ( res: GSS.SessionResponse ) => void 
-    ) => void 
-  ): this;
-}
+// export declare interface SUServer {
+//   on(
+//     event: 'initSession', 
+//     listener: (
+//       req: GSS.SessionRequest, 
+//       callback: ( res: GSS.SessionResponse ) => void 
+//     ) => void 
+//   ): this;
+// }
 
 export class SUServer extends EventEmitter {
 
   private httpServer: http.Server;
   private socketServer: sio.Server;
 
+  private handlers: SUServer.Handlers;
+
   constructor( options: SUServer.Options ) {
+    
     super();
 
+    this.handlers = {
+      initSession: () => Promise.reject(new Error('Not implemented'))
+    }
+
+    Object.assign( this.handlers, options.handlers );
+    
     this.httpServer = http.createServer()
     this.socketServer = new sio.Server( this.httpServer );
 
@@ -38,7 +47,7 @@ export class SUServer extends EventEmitter {
         colors.yellow( options.port.toString() )
       }` );
     })
-        
+      
     this.socketServer.on( 'connect', socket => {
       
       const imei = socket.handshake.query.imei; 
@@ -49,9 +58,10 @@ export class SUServer extends EventEmitter {
           sessionReq: GSS.SessionRequest, 
           callback: ( sessionResp: GSS.SessionResponse ) => void 
         ) => {
-
-          // TODO: we could use a direct handler instead of using events ...
-          this.emit( 'initSession', sessionReq, callback );
+          this.handlers.initSession( sessionReq ).then( callback )
+            .catch( err => {
+              logger.error( `Init session failed => ${ err.stack }` );
+          })
         })
         
         socket.on( 'disconnect', () => {
@@ -73,8 +83,15 @@ export class SUServer extends EventEmitter {
 
 export namespace SUServer {
 
+  export interface Handlers {
+    initSession: InitSessionHandler;
+  }
+
   export interface Options {
     port: number;
+    handlers: Handlers;
   }
+
+  export type InitSessionHandler = ( req: GSS.SessionRequest ) => Promise<GSS.SessionResponse>;
 
 }
