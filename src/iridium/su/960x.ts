@@ -1,6 +1,6 @@
-import logger from "../logger";
+import logger from "../../logger";
 import nodemailer from "nodemailer";
-import { ATInterface } from "../at/interface";
+import { ATInterface } from "../../at/interface";
 import { 
   CMD_CGSN, 
   CMD_SBDD, 
@@ -12,7 +12,9 @@ import {
   CMD_SBDWB, 
   CMD_SBDWT 
 } from "./commands";
-import { MOTransport } from "./transport";
+import { GSS } from "../gss";
+
+import * as sio from "socket.io-client";
 
 export interface ModemOptions {
 
@@ -22,9 +24,13 @@ export interface ModemOptions {
     path: string
   };
 
-  volatile?: boolean;
-  moTransports: MOTransport[];
+  gss: {
+    uri?: string;
+    host?: string;
+    port?: number;
+  };
 
+  volatile?: boolean;
 }
 
 export interface MobileBuffer {
@@ -37,20 +43,20 @@ export class Modem {
   imei: string;
   at: ATInterface;
 
-  moTransports: MOTransport[];
+  momsn: number;
+  mtmsn: number;
 
-  momsn: number = 0;
-  mtmsn: number = 0;
-
-  moData: MobileBuffer = {
+  moBuffer: MobileBuffer = {
     buffer: Buffer.alloc( 0 ),
     checksum: 0,
   };
 
-  mtData: MobileBuffer = {
+  mtBuffer: MobileBuffer = {
     buffer: Buffer.alloc( 0 ),
     checksum: 0,
   };
+
+  socket: sio.Socket;
   
   constructor( options: ModemOptions ) {
 
@@ -59,7 +65,13 @@ export class Modem {
       path: options.dte.path,
     });
 
-    this.moTransports = options.moTransports;
+    const uri = options.gss.uri 
+      ? options.gss.uri
+      : `ws://${ options.gss.host }:${ options.gss.port }`;
+
+
+    this.momsn = 0;
+    this.mtmsn = 0;
 
     this.imei = options.imei || '527695889002193';
 
@@ -75,14 +87,79 @@ export class Modem {
       CMD_SBDRT,
     ], this )
 
+
+    this.socket = sio.connect( uri, {
+      query: {
+        imei: this.imei,
+      }
+    })
+
+    this.socket.on( 'connect', () => {
+      logger.debug( `GSS reached` );
+    })
+
+    this.socket.on( 'disconnect', () => {
+      logger.debug( `GSS lost` );
+    })
+
+
+
   }
 
-  increaseMTMSN() {
-    this.mtmsn = ( this.mtmsn + 1 ) & 0xFFFF;
-  }
-
-  increaseMOMSN() {
+  private increaseMOMSN() {
     this.momsn = ( this.momsn + 1 ) & 0xFFFF;
+  }
+
+  initSession( opts: { 
+    alert?: boolean 
+  }): Promise<GSS.SessionResponse> {
+
+    return new Promise( ( res, rej ) => {
+
+      const sessionReq: GSS.SessionRequest = {
+        imei: this.imei,
+        mo: this.moBuffer.buffer,
+        momsn: this.momsn,
+        alert: opts.alert || false,
+      }
+
+      this.socket.on( 'ringAlert', () => {
+        // this.at.writeLine( 'SBDRING' ); // TODO
+      })
+
+
+      this.socket.timeout( 15000 ).emit( 
+        'initSession', sessionReq, ( err: Error | null, sessionResp: GSS.SessionResponse ) => {
+
+          if ( err ) {
+            
+            res({
+              mosts: 32,
+              mtsts: 0,
+              momsn: this.momsn,
+              mtmsn: this.mtmsn,
+              mt: this.mtBuffer.buffer,
+              mtq: 0
+            });
+
+          } else {
+            
+            if ( this.moBuffer.buffer.length > 0 ) {
+              this.increaseMOMSN();
+            }
+
+            this.mtmsn = sessionResp.mtmsn;
+
+            if ( sessionResp.mtsts === 1 ) {
+              Modem.updateMobileBuffer( this.mtBuffer, sessionResp.mt );
+            }
+            res( sessionResp );
+          }
+      })
+
+    })
+
+
   }
 
   static clearMobileBuffer( mobBuf: MobileBuffer ) {

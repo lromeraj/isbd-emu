@@ -6,7 +6,6 @@ export const CMD_AT = new ATCmd( '', undefined )
 
 export const CMD_QUIET = new ATCmd( 'q', undefined )
   .onExec( /^[01]?$/, async ( at, match ) => {
-    console.log( match );
     logger.warn( "ATQ not implemented" );
   })
 

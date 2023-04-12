@@ -25,7 +25,6 @@ const config = {
 
 };
 
-
 const logger = winston.createLogger({
   
   level: "debug",
@@ -44,13 +43,13 @@ const logger = winston.createLogger({
       const {
         timestamp, level, message, ...args
       } = info;
-      
+
       // console.log( info[ Symbol.for('splat')] )
 
       const levelFormat: { [key: string]: string } = config.levelFormat; 
       
-      return `${timestamp} ${ levelFormat[ level ] }: ${message} ${ 
-        Object.keys( args ).length ? JSON.stringify(args, null, 2) : ''
+      return `${ timestamp } ${ levelFormat[ level ] }: ${ message } ${
+        Object.keys( args ).length ? JSON.stringify( args, null, 2 ) : ''
       }`;
     
     })  
