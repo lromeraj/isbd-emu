@@ -4,7 +4,6 @@ import { EventEmitter } from "events";
 
 import logger from "../../../../logger";
 import fastq, { queueAsPromised } from "fastq";
-import { buffer } from "stream/consumers";
 import { TCPTransport } from "../../transport/tcp";
 import { decodeMtMessage } from "../../msg/decoder";
 
