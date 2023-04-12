@@ -5,7 +5,8 @@
   "main": "index.js",
   "scripts": {
     "build": "npm i && rm -rf build/ && tsc",
-    "test": "jest"
+    "test": "jest",
+    "prepare": "npm run build"
   },
   "keywords": [
     "iridium",
