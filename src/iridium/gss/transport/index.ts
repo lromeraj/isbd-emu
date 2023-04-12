@@ -2,25 +2,24 @@ import moment, { Moment } from "moment";
 
 import type { GSS } from "../index";
 
-export abstract class MOTransport {
+export abstract class Transport {
 
-  constructor() { }
-
-  abstract sendMessage( 
-    msg: MOTransport.Message 
-  ): Promise<MOTransport.Message>;
-
+  abstract sendSessionMessage(
+    msg: Transport.SessionMessage 
+  ): Promise<Transport.SessionMessage>;
+  
 }
 
-export namespace MOTransport {
+export namespace Transport {
 
-  export interface Message {
+  export interface SessionMessage {
     imei: string;
-    momsn: number; 
+    momsn: number;
     mtmsn: number;
     payload: Buffer;
-    sessionTime: Moment;
-    sessionStatus: GSS.Session.Status;
-    unitLocation: GSS.UnitLocation;
+    time: Moment;
+    status: GSS.Session.Status;
+    location: GSS.UnitLocation;
   }
+
 }

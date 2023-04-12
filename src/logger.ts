@@ -48,8 +48,8 @@ const logger = winston.createLogger({
 
       const levelFormat: { [key: string]: string } = config.levelFormat; 
       
-      return `${timestamp} ${ levelFormat[ level ] }: ${message} ${ 
-        Object.keys( args ).length ? JSON.stringify(args, null, 2) : ''
+      return `${ timestamp } ${ levelFormat[ level ] }: ${ message } ${
+        Object.keys( args ).length ? JSON.stringify( args, null, 2 ) : ''
       }`;
     
     })  

@@ -5,16 +5,20 @@ import { EventEmitter } from "events";
 import logger from "../../../../logger";
 import fastq, { queueAsPromised } from "fastq";
 import { buffer } from "stream/consumers";
+import { TCPTransport } from "../../transport/tcp";
 
 export class MTServer extends EventEmitter {
 
   private tcpServer: net.Server;
+  private transport?: TCPTransport;
   private mtMsgQueue: queueAsPromised<Buffer[]>;
 
-  constructor( options: MTServer.Options ) { 
-    super();
+  constructor( options: MTServer.Options ) {
 
-    this.mtMsgQueue = fastq.promise( 
+    super();
+    this.transport = options.transport;
+
+    this.mtMsgQueue = fastq.promise(
       this.mtMsgWorker.bind( this ), 1 );
 
     this.tcpServer = net.createServer();
@@ -25,18 +29,29 @@ export class MTServer extends EventEmitter {
       }` );
     })
 
-    this.tcpServer.on( 'connection', 
+    this.tcpServer.on( 'connection',
       this.socketHandler.bind( this ) );
-  
+
   }
 
-  private async mtMsgWorker( chunks: Buffer[] ) {
+  private async mtMsgWorker( mtBuffers: Buffer[] ) {
 
-    const decodedMsg = this.decode( 
-      Buffer.concat( chunks ), 3 );
+    const buffer = Buffer.concat( mtBuffers );
+    logger.debug( `Decoding incoming MT message size=${ 
+      colors.yellow( buffer.length.toString() ) 
+    }` );
+
+    const decodedMsg = this.decode( buffer );
       
     if ( decodedMsg ) {
-      // send confirmation message
+      if ( this.transport ) {
+        this.transport.sendMessage( decodedMsg, 
+          this.encodeConfirmation.bind( this ) );
+      } else {
+        logger.error( `Could not send MT confirmation, TCP transport is not defined` );
+      }
+    } else {
+      logger.error( `Could not decode MT message` );
     }
 
   }
@@ -63,7 +78,7 @@ export class MTServer extends EventEmitter {
       buffersRead.push( buffer );
       bytesRead += buffer.length;
       
-      if ( headerBuffer === null 
+      if ( headerBuffer === null
         && bytesRead >= PROTO_HEADER_LEN ) {
         
         headerBuffer = buffersRead.length > 1
@@ -76,13 +91,16 @@ export class MTServer extends EventEmitter {
         const msgLen = headerBuffer.readUint16BE( 1 );
         
         if ( protoRev === 0x01 && msgLen <= MAX_MSG_LEN ) {
+          
           // PROTO HEADER LENGTH  +   MSG LEN
           //       3 bytes            N bytes = 3 + N
           bytesToRead = PROTO_HEADER_LEN + msgLen;
+
         } else {
           socket.destroy();
           return;
         }
+
       }
 
       if ( bytesRead === bytesToRead ) {
@@ -141,38 +159,44 @@ export class MTServer extends EventEmitter {
     return 24;
   }
 
-  private decode( 
-    buf: Buffer, 
-    offset: number = 0 
+  private decode(
+    buf: Buffer,
   ): MTServer.Message | null {
-
-    const msg: MTServer.Message = {};
-
-    for ( let i=0; i < buf.length; i++ ) {
-
-      if ( buf[ i ] === 0x41 ) {
-        i += this.decodeHeader( msg, buf, i );
-      } else if ( buf[ i ] === 0x42 ) {
-        i += this.decodePayload( msg, buf, i );
+    
+    const protoRev = buf.readUint8( 0 );
+    const length = buf.readUint16BE( 1 );
+    
+    const msg: MTServer.Message = {
+      length,
+      protoRev,
+    };
+    
+    let offset: number = 3;
+    
+    for ( ; offset < buf.length; ) {
+      if ( buf[ offset ] === 0x41 ) {
+        offset += this.decodeHeader( msg, buf, offset );
+      } else if ( buf[ offset ] === 0x42 ) {
+        offset += this.decodePayload( msg, buf, offset );
       } else {
         return null;
       }
-
     }
 
     return msg;
   }
-
 }
-
 
 export namespace MTServer {
 
   export interface Options {
     port: number;
+    transport?: TCPTransport;
   }
 
   export interface Message {
+    length: number;
+    protoRev: number;
     mtHeader?: Message.Header;
     mtPayload?: Message.Payload;
   }
@@ -198,10 +222,12 @@ export namespace MTServer {
     }
 
     export namespace Header {
+
       export enum Flags {
         FLUSH_MT_QUEUE    = 0x0001,
         SEND_RING_ALERT   = 0x0002, 
       }
+
     }
   
     export interface Payload extends IE {
@@ -209,7 +235,7 @@ export namespace MTServer {
     }
 
     export interface Confirmation extends IE {
-  
+      
     }
 
 

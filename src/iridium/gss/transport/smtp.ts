@@ -1,10 +1,10 @@
 import nodemailer from "nodemailer";
 
 
-import { MOTransport } from ".";
+import { Transport } from ".";
 import { GSS } from "../index";
 
-export class SMTPTransport extends MOTransport {
+export class SMTPTransport extends Transport {
 
   private transporter: nodemailer.Transporter;
   private readonly options: SMTPTransport.Options;
@@ -17,13 +17,13 @@ export class SMTPTransport extends MOTransport {
       port: options.port,
       auth: {
         user: options.user,
-        pass: options.password,
+        pass: options.password || '',
       }
     });
 
   }
 
-  private getStatusFromMsg( msg: MOTransport.Message ): string {
+  private getStatusFromMsg( msg: Transport.SessionMessage ): string {
     const stsText = {
       [GSS.Session.Status.TRANSFER_OK]: 'Transfer OK',
       [GSS.Session.Status.MT_MSG_TOO_LARGE]: 'MT Message Too Large',
@@ -34,39 +34,39 @@ export class SMTPTransport extends MOTransport {
       [GSS.Session.Status.SBD_DENIAL]: 'SBD Denial',
     };
     return `${ 
-      String( msg.sessionStatus ).padStart( 2, '0' ) 
-    } - ${ stsText[ msg.sessionStatus ] }`
+      String( msg.status ).padStart( 2, '0' ) 
+    } - ${ stsText[ msg.status ] }`
   }
 
-  private getTextFromMsg( msg: MOTransport.Message ): string {
+  private getTextFromMsg( msg: Transport.SessionMessage ): string {
 
     return  `MOMSN: ${ msg.momsn }\n`
           + `MTMSN: ${ msg.mtmsn }\n`
           + `Time of Session (UTC): ${
-              msg.sessionTime.utc().format( 'ddd MMM D HH:mm:ss YYYY' ) 
+              msg.time.utc().format( 'ddd MMM D HH:mm:ss YYYY' ) 
             }\n`
           + `${ this.getStatusFromMsg( msg ) }\n`
           + `Message Size (bytes): ${ msg.payload.length }\n\n`
           + `Unit Location: Lat = ${
-              msg.unitLocation.coord[ 0 ].toFixed( 5 ) 
+              msg.location.coord[ 0 ].toFixed( 5 ) 
             } Long = ${ 
-              msg.unitLocation.coord[ 1 ].toFixed( 5 ) 
+              msg.location.coord[ 1 ].toFixed( 5 ) 
             }\n`
-          + `CEPRadius = ${ msg.unitLocation.cepRadius.toFixed( 0 ) }`;
+          + `CEPRadius = ${ msg.location.cepRadius.toFixed( 0 ) }`;
 
   }
 
-  private getSubjectFromMsg( msg: MOTransport.Message ): string {
+  private getSubjectFromMsg( msg: Transport.SessionMessage ): string {
     return `SBD Msg From Unit: ${ msg.imei }`;
   }
 
-  private getFilenameFromMsg( msg: MOTransport.Message ): string {
-    return `${ msg.imei }_${ 
+  private getFilenameFromMsg( msg: Transport.SessionMessage ): string {
+    return `${ msg.imei }_${
       String( msg.momsn ).padStart( 6, '0' ) 
     }.sbd`;
   }
 
-  sendMessage( msg: MOTransport.Message ): Promise<MOTransport.Message> {
+  sendSessionMessage( msg: Transport.SessionMessage ): Promise<Transport.SessionMessage> {
 
     return this.transporter.sendMail({
 
@@ -87,7 +87,7 @@ export class SMTPTransport extends MOTransport {
 export namespace SMTPTransport { 
   export interface Options {
     host: string;
-    port?: number;
+    port: number;
     user: string;
     password?: string;
     to?: string;

@@ -3,7 +3,7 @@ import logger from "../logger";
 import { SerialPort } from "serialport"
 import { Argument, Command, Option, program } from "commander";
 import { Modem } from "../iridium/su/960x";
-import { MOTransport } from "../iridium/gss/transport";
+import { Transport } from "../iridium/gss/transport";
 import { SMTPTransport } from "../iridium/gss/transport/smtp";
 import { TCPTransport } from "../iridium/gss/transport/tcp";
 import { GSS } from "../iridium/gss";
@@ -51,7 +51,7 @@ async function main() {
   program.parse();
   const opts = program.opts();
 
-  const moTransports: MOTransport[] = []
+  const transports: Transport[] = []
 
   if ( opts.moSmtpUser && opts.moSmtpHost ) {
 
@@ -63,25 +63,32 @@ async function main() {
       to: opts.moSmtpTo,
     } as SMTPTransport.Options;
     
-    moTransports.push( new SMTPTransport( smtpOpts ) );
+    transports.push( new SMTPTransport( smtpOpts ) );
   }
 
+  let tcpTransport: TCPTransport | undefined = undefined;
+
   if ( opts.moTcpHost && opts.moTcpPort ) {
+    
     const tcpOpts: TCPTransport.Options = {
       host: opts.moTcpHost,
       port: opts.moTcpPort,
     }
-    moTransports.push( new TCPTransport( tcpOpts ) );
+
+    tcpTransport = new TCPTransport( tcpOpts );
+    transports.push( tcpTransport );
+    
   }
 
-  if ( moTransports.length === 0 ) {
+  if ( transports.length === 0 ) {
     logger.warn( `No MO transports defined` );
   }
 
   const gss = new GSS({ // gss instance
-    moTransports,
+    transports: transports,
     mtServer: {
       port: opts.mtServerPort,
+      transport: tcpTransport,
     },
     suServer: {
       port: opts.suServerPort

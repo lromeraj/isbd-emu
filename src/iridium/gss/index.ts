@@ -1,4 +1,4 @@
-import { MOTransport } from "./transport";
+import { Transport } from "./transport";
 
 import * as fastq from "fastq";
 import type { queueAsPromised } from "fastq";
@@ -7,12 +7,13 @@ import logger from "../../logger";
 import colors from "colors";
 import { SUServer } from "./servers/su";
 import { MTServer } from "./servers/mt";
+import { TCPTransport } from "./transport/tcp";
 
 interface SubscriberUnit {
   momsn: number;
   mtmsn: number;
   location: GSS.UnitLocation;
-  moMsgQueue: queueAsPromised<MOTransport.Message>;
+  moMsgQueue: queueAsPromised<Transport.SessionMessage>;
 }
  
 export class GSS {
@@ -35,11 +36,11 @@ export class GSS {
   /**
    * This transports are used for every MO message sent by ISUs
    */
-  private moTransports: MOTransport[];
+  private moTransports: Transport[];
   
   constructor( options: GSS.Options ) {
 
-    this.moTransports = options.moTransports;
+    this.moTransports = options.transports;
 
     this.suServer = new SUServer({
       port: options.suServer.port,
@@ -49,7 +50,8 @@ export class GSS {
     });
 
     this.mtServer = new MTServer({
-      port: options.mtServer.port
+      port: options.mtServer.port,
+      transport: options.mtServer.transport,
     });
 
     /*
@@ -66,10 +68,10 @@ export class GSS {
   //   isu.mtmsn = ( isu.mtmsn + 1 ) & 0xFFFF;
   // }
 
-  private async moMsgWorker( msg: MOTransport.Message ) {
+  private async moMsgWorker( msg: Transport.SessionMessage ) {
 
     const promises = this.moTransports.map(
-      transport => transport.sendMessage( msg ) );
+      transport => transport.sendSessionMessage( msg ) );
     
 
     return Promise.allSettled( promises ).then( results => {
@@ -115,7 +117,7 @@ export class GSS {
         momsn: 0,
         mtmsn: 0,
         location: this.generateUnitLocation(),
-        moMsgQueue: fastq.promise( 
+        moMsgQueue: fastq.promise(
           this.moMsgWorker.bind( this ), 1 )
       }
     }
@@ -123,9 +125,11 @@ export class GSS {
     return isu;
   }
 
-  async initSession( sessionReq: GSS.SessionRequest ): Promise<GSS.SessionResponse> {
+  async initSession( 
+    sessionReq: GSS.SessionRequest 
+  ): Promise<GSS.SessionResponse> {
 
-    const isu = this.getISU( sessionReq.imei )
+    const isu = this.getISU( sessionReq.imei );
 
     isu.momsn = sessionReq.momsn; // update isu momsn
 
@@ -140,21 +144,20 @@ export class GSS {
     
     if ( sessionReq.mo.length > 0 ) {
 
-      const transportMsg: MOTransport.Message = {
+      const transportMsg: Transport.SessionMessage = {
         imei: sessionReq.imei,
         momsn: sessionReq.momsn,
         mtmsn: isu.mtmsn,
         payload: sessionReq.mo,
-        sessionTime: moment(),
-        unitLocation: this.generateUnitLocation(),
-        sessionStatus: GSS.Session.Status.TRANSFER_OK,
+        time: moment(),
+        location: this.generateUnitLocation(),
+        status: GSS.Session.Status.TRANSFER_OK,
       }
       
       isu.moMsgQueue.push( transportMsg );      
     }
 
     sessionResp.mosts = 0;
-
 
     return sessionResp;
   }
@@ -173,11 +176,12 @@ export namespace GSS {
   export interface Options {
     mtServer: {
       port: number;
+      transport?: TCPTransport;
     };
     suServer: { 
       port: number;
     };
-    moTransports: MOTransport[];
+    transports: Transport[];
   }
 
   export interface SessionRequest {
