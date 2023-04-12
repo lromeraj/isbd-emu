@@ -1,6 +1,9 @@
-import { ATInterface } from "../at/interface";
-import { ATCmd } from "../at/cmd"
-import { computeChecksum, Modem, readMB, validateMB } from "./modem";
+import moment from "moment";
+import { sprintf } from "sprintf-js";
+import { ATCmd } from "../../at/cmd"
+import { ATInterface } from "../../at/interface";
+import { computeChecksum, Modem, readMB, validateMB } from "./960x";
+import { GSS } from "../gss";
 
 /**
  * 5.21 +CGSN – Serial Number
@@ -24,14 +27,28 @@ export const CMD_SBDTC = ATCmd.wrapContext<Modem>( '+sbdtc', cmd => {
   })
 })
 
+function writeSessionResponse( 
+  this: Modem, at: ATInterface, sessionResp: GSS.SessionResponse 
+) {
+  
+  const resp = sprintf( 'SBDI:%d,%d,%d,%d,%d,%d',
+      sessionResp.mosts, this.momsn,
+      sessionResp.mtsts, sessionResp.mtmsn, sessionResp.mt.length, sessionResp.mtq );
+
+  at.writeLine( resp );
+
+}
+
 /**
  * 5.38 +SBDIX – Short Burst Data: Initiate an SBD Session Extended
  */
 export const CMD_SBDIX = ATCmd.wrapContext<Modem>( '+sbdix', cmd => {
   cmd.onExec( async function( at ) {
-
-
+    return this.initSession({ alert: false }).then( session => {
+      writeSessionResponse.apply( this, [ at, session ] );
+    })
   })
+
 })
 
 /**
@@ -39,6 +56,9 @@ export const CMD_SBDIX = ATCmd.wrapContext<Modem>( '+sbdix', cmd => {
 */
 export const CMD_SBDIXA = ATCmd.wrapContext<Modem>( '+sbdixa', cmd => {
   cmd.onExec( async function( at ) {
+    return this.initSession({ alert: true }).then( session => {
+      writeSessionResponse.apply( this, [ at, session ] );
+    })
   })
 })
 
