@@ -1,7 +1,7 @@
 import moment from "moment";
 import { sprintf } from "sprintf-js";
-import { ATCmd } from "../../at/cmd"
-import { ATInterface } from "../../at/interface";
+import { ATCmd } from "../at/cmd"
+import { ATInterface } from "../at/interface";
 import { computeChecksum, Modem, readMB, validateMB } from "./960x";
 import { GSS } from "../gss";
 

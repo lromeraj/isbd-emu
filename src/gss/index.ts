@@ -3,7 +3,7 @@ import { Transport } from "./transport";
 import * as fastq from "fastq";
 import type { queueAsPromised } from "fastq";
 import moment from "moment";
-import logger from "../../logger";
+import logger from "../logger";
 import colors from "colors";
 import { MOServer } from "./servers/mo";
 import { MTServer } from "./servers/mt";

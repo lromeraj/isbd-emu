@@ -1,7 +1,7 @@
 import colors from "colors";
 import logger from "../logger";
 import { Argument, Command, Option, program } from "commander";
-import { Modem } from "../iridium/su/960x";
+import { Modem } from "../isu/960x";
 
 program
   .version( '0.0.5' )

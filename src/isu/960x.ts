@@ -1,6 +1,6 @@
-import logger from "../../logger";
+import logger from "../logger";
 import nodemailer from "nodemailer";
-import { ATInterface } from "../../at/interface";
+import { ATInterface } from "../at/interface";
 import { 
   CMD_CGSN, 
   CMD_SBDD, 
