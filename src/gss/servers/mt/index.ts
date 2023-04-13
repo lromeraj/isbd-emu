@@ -45,8 +45,7 @@ export class MTServer extends EventEmitter {
       
     if ( mtMsg ) {
       if ( this.transport ) {
-        this.transport.sendMessage( mtMsg, 
-          this.encodeConfirmation.bind( this ) );
+        // TODO: this.transport.sendMessage( mtMsg, encodeM.bind( this ) );
       } else {
         logger.error( `Could not send MT confirmation, TCP transport is not defined` );
       }
@@ -114,16 +113,6 @@ export class MTServer extends EventEmitter {
 
   }
 
-  private encodeConfirmation( 
-    msg: MTServer.Message 
-  ): Buffer {
-
-    const IE_ID = 0x44;
-    const IE_LENGTH = 25;
-
-    return Buffer.from([]);
-  }
-
 }
 
 export namespace MTServer {
@@ -132,53 +121,4 @@ export namespace MTServer {
     port: number;
     transport?: TCPTransport;
   }
-
-  export interface Message {
-    length: number;
-    protoRev: number;
-    mtHeader?: Message.Header;
-    mtPayload?: Message.Payload;
-  }
-
-  export namespace Message {
-
-    /**
-     * Message Information Element
-     */
-    export interface IE { 
-      id: number;
-      length: number;
-    }
-    
-    export interface Header extends IE {
-
-      /**
-       * Unique Client Message ID
-       */
-      ucmid: Buffer;
-      imei: string;
-      flags: Header.Flags;
-    }
-
-    export namespace Header {
-
-      export enum Flags {
-        FLUSH_MT_QUEUE    = 0x0001,
-        SEND_RING_ALERT   = 0x0002, 
-      }
-
-    }
-  
-    export interface Payload extends IE {
-      payload: Buffer;
-    }
-
-    export interface Confirmation extends IE {
-      
-    }
-
-
-
-  }
-
 }

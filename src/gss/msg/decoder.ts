@@ -1,5 +1,35 @@
 import moment from "moment";
-import { MO_IE_HEADER_ID, MO_IE_LOCATION_ID, MO_IE_PAYLOAD_ID, MT_IE_HEADER_ID, MT_IE_PAYLOAD_ID, Message } from "./index";
+
+import { 
+  IE_H_LEN, 
+  IE_MO_CONFIRMATION_ID, 
+  IE_MO_HEADER_ID, 
+  IE_MO_LOCATION_ID, 
+  IE_MO_PAYLOAD_ID, 
+  IE_MT_CONFIRMATION_ID, 
+  IE_MT_HEADER_ID, 
+  IE_MT_PAYLOAD_ID, 
+  MSG_H_LEN, 
+  MSG_REV, 
+  Message 
+} from "./index";
+
+export function decodeMsgHeader( msg: Message, buf: Buffer ): number {
+
+  const msgRev = buf.readUint8( 0 );
+  const msgLength = buf.readUint16BE( 1 );
+
+  const length = buf.length - MSG_H_LEN;
+
+  if ( msgRev === MSG_REV && msgLength === length ) {
+    msg.length = msgLength;  
+    msg.rev = msgRev;
+  } else {
+    throw new Error('Invalid message header');
+  }
+
+  return MSG_H_LEN;
+}
 
 /**
  * 
@@ -20,10 +50,11 @@ function decodeMoHeader( msg: Message.MO, data: Buffer, offset: number ): number
     mtmsn: data.readUint16BE( offset + 25 ),
     time: moment.unix( data.readUint32BE( offset + 28 ) ),
   };
+
   msg.header = header;
 
   // IE header length + IE length
-  return 3 + header.length;
+  return IE_H_LEN + header.length;
 }
 
 function decodeMoLocation( msg: Message.MO, data: Buffer, offset: number ): number {
@@ -50,7 +81,7 @@ function decodeMoLocation( msg: Message.MO, data: Buffer, offset: number ): numb
 
   msg.location = location;
 
-  return 3 + location.length;
+  return IE_H_LEN + location.length;
 }
 
 function decodeMoPayload( msg: Message.MO, data: Buffer, offset: number ): number {
@@ -66,44 +97,45 @@ function decodeMoPayload( msg: Message.MO, data: Buffer, offset: number ): numbe
 
   msg.payload = payload;
 
-  return 3 + length;
+  return IE_H_LEN + length;
 }
 
 /**
  * Decodes Iridium SBD MO Message
  * 
- * @param data Message data buffer
+ * @param buf Message data buffer
  * 
  * @returns Decoded mobile originated message, 
  * in case of failure `null` is returned
  */
-export function decodeMoMessage( data: Buffer ): Required<Message.MO> | null {
+export function decodeMoMessage( buf: Buffer ): Message.MO | null {
   
-  const protoRevision = data.readUint8( 0 );
-  const overallLength = data.readUint16BE( 1 );
+  const msg: Message.MO = {};
   
-  const msg: Message.MO = {
-    protoRev: protoRevision,
-    length: overallLength,
-  };
-  
-  let offset: number = 3;
+  try {
+
+    let offset = decodeMsgHeader( msg, buf ); 
  
-  for ( ; offset < data.length; ) {
-    
-    if ( data[ offset ] === MO_IE_HEADER_ID ) {
-      offset += decodeMoHeader( msg, data, offset );
-    } else if ( data[ offset ] === MO_IE_PAYLOAD_ID ) {
-      offset += decodeMoPayload( msg, data, offset );
-    } else if ( data[ offset ] === MO_IE_LOCATION_ID ) {
-      offset += decodeMoLocation( msg, data, offset );
-    } else {
-      return null;
+    for ( ; offset < buf.length; ) {
+      
+      if ( buf[ offset ] === IE_MO_HEADER_ID ) {
+        offset += decodeMoHeader( msg, buf, offset );
+      } else if ( buf[ offset ] === IE_MO_PAYLOAD_ID ) {
+        offset += decodeMoPayload( msg, buf, offset );
+      } else if ( buf[ offset ] === IE_MO_LOCATION_ID ) {
+        offset += decodeMoLocation( msg, buf, offset );
+      } else if ( buf[ offset ] === IE_MO_CONFIRMATION_ID ) {
+        // TODO: ... 
+      } else {
+        return null;
+      }
     }
 
+  } catch ( e ) {
+    return null;
   }
 
-  return msg as Required<Message.MO>;
+  return msg;
 }
 
 function decodeMtPayload(
@@ -121,49 +153,72 @@ function decodeMtPayload(
   
   // InformationElement  +  MT Payload
   //     3 (bytes)       +  N (bytes) = 3 + N bytes
-  return 3 + length;
+  return IE_H_LEN + length;
 }
 
 function decodeMtHeader( 
   msg: Message.MT, buffer: Buffer, offset: number 
 ): number {
 
-  msg.header = {
+  const header: Required<Message.MT.Header> = {
     id: buffer.readUint8( offset ),
     length: buffer.readUint16BE( offset + 1 ),
     ucmid: buffer.subarray( offset + 3, offset + 7 ),
     imei: buffer.subarray( offset + 7, offset + 22 ).toString( 'ascii' ),
     flags: buffer.readUint16BE( offset + 22 ),
-  }
+  } 
   
+  msg.header = header;
+
   // InformationElement  +  MT Header
   //     3 (bytes)       +  21 (bytes) = 24 bytes
-  return 24;
+  return IE_H_LEN + header.length;
+}
+
+function decodeMtConfirmation( 
+  msg: Message.MT, buffer: Buffer, offset: number 
+): number {
+
+  const confirmation: Required<Message.MT.Confirmation> = {
+    id: buffer.readUint8( offset ),
+    length: buffer.readUint16BE( offset + 1 ),
+    ucmid: buffer.subarray( offset + 3, offset + 7 ),
+    imei: buffer.subarray( offset + 7, offset + 22 ).toString( 'ascii' ),
+    autoid: buffer.readUint32BE( offset + 22 ),
+    status: buffer.readUint16BE( offset + 26 ),
+  } 
+  
+  msg.confirmation = confirmation;
+
+  // InformationElement  +  MT Header
+  //     3 (bytes)       +  21 (bytes) = 24 bytes
+  return IE_H_LEN + confirmation.length;
 }
 
 export function decodeMtMessage(
   buf: Buffer,
-): Required<Message.MT> | null {
+): Message.MT | null {
   
-  const protoRev = buf.readUint8( 0 );
-  const length = buf.readUint16BE( 1 );
+  const msg: Message.MT = {};
   
-  const msg: Message.MT = {
-    length,
-    protoRev,
-  };
-  
-  let offset: number = 3;
-  
-  for ( ; offset < buf.length; ) {
-    if ( buf[ offset ] === MT_IE_HEADER_ID ) {
-      offset += decodeMtHeader( msg, buf, offset );
-    } else if ( buf[ offset ] === MT_IE_PAYLOAD_ID ) {
-      offset += decodeMtPayload( msg, buf, offset );
-    } else {
-      return null;
+  try {
+    let offset = decodeMsgHeader( msg, buf ); 
+      
+    for ( ; offset < buf.length; ) {
+      if ( buf[ offset ] === IE_MT_HEADER_ID ) {
+        offset += decodeMtHeader( msg, buf, offset );
+      } else if ( buf[ offset ] === IE_MT_PAYLOAD_ID ) {
+        offset += decodeMtPayload( msg, buf, offset );
+      } else if ( buf[ offset ] === IE_MT_CONFIRMATION_ID ) {
+        offset+= decodeMtConfirmation( msg, buf, offset );
+      } else {
+        return null;
+      }
     }
+
+  } catch( e ) {
+    return null;
   }
 
-  return msg as Required<Message.MT>;
+  return msg;
 }
