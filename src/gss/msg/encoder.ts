@@ -1,9 +1,10 @@
-import { IE_H_LEN, IE_MO_HEADER_ID, IE_MO_HEADER_LEN, IE_MO_LOCATION_ID, IE_MO_LOCATION_LEN, IE_MO_PAYLOAD_ID, MSG_H_LEN, MSG_REV, Message } from ".";
+import { IE_H_LEN, IE_MO_HEADER_ID, IE_MO_HEADER_LEN, IE_MO_LOCATION_ID, IE_MO_LOCATION_LEN, IE_MO_PAYLOAD_ID, IE_MT_CONFIRMATION_ID, IE_MT_CONFIRMATION_LEN, IE_MT_HEADER_ID, IE_MT_HEADER_LEN, IE_MT_PAYLOAD_ID, MSG_H_LEN, MSG_REV, Message } from ".";
 
 function encodeMsg( payload: Buffer[] ): Buffer {
   
   let offset = 0;
   const msgHeaderBuf = Buffer.alloc( MSG_H_LEN );
+  
   const msgPayloadLength = payload.reduce( 
     ( prev, cur ) => prev + cur.length, 0 );
 
@@ -102,15 +103,43 @@ export function encodeMoMsg(
 }
 
 function encodeMtPayload( msg: Message.MT.Payload ): Buffer {
-  return Buffer.from([])
+
+  let offset = 0;
+  const buffer = Buffer.alloc( IE_H_LEN + msg.payload.length );
+
+  offset = buffer.writeUint8( IE_MT_PAYLOAD_ID, offset );
+  offset = buffer.writeUint16BE( msg.payload.length, offset );
+  offset += msg.payload.copy( buffer, offset );
+  
+  return buffer;
 }
 
 function encodeMtHeader( msg: Message.MT.Header ): Buffer {
-  return Buffer.from([])
+
+  let offset = 0;
+  const buffer = Buffer.alloc( IE_H_LEN + IE_MT_HEADER_LEN );
+
+  offset = buffer.writeUint8( IE_MT_HEADER_ID, offset );
+  offset = buffer.writeUint16BE( IE_MT_HEADER_LEN, offset );
+  offset += msg.ucmid.copy( buffer, offset );
+  offset += buffer.write( msg.imei, offset, 15, 'ascii' );
+  offset = buffer.writeUint16BE( msg.flags, offset );
+
+  return buffer;
 }
 
 function encodeMtConfirmation( msg: Message.MT.Confirmation ): Buffer {
-  return Buffer.from([])
+
+  let offset = 0;
+  const buffer = Buffer.alloc( IE_H_LEN + IE_MT_CONFIRMATION_LEN );
+
+  offset = buffer.writeUint8( IE_MT_CONFIRMATION_ID, offset );
+  offset = buffer.writeUint16BE( IE_MT_CONFIRMATION_LEN, offset );
+  offset += msg.ucmid.copy( buffer, offset );
+  offset += buffer.write( msg.imei, offset, 15, 'ascii' );
+  offset = buffer.writeUint16BE( msg.status, offset )
+
+  return buffer;
 }
 
 export function encodeMtMessage(
@@ -130,7 +159,8 @@ export function encodeMtMessage(
   }
   
   if ( msg.confirmation ) {
-    // TODO: ...
+    payload.push( 
+      encodeMtConfirmation( msg.confirmation ) );
   }
   
   return encodeMsg( payload );
