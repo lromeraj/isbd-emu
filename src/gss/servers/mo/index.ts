@@ -7,7 +7,7 @@ import sio from "socket.io";
 import colors from "colors";
 import net from "net";
 import EventEmitter from "events";
-import logger from "../../../../logger";
+import logger from "../../../logger";
 import { GSS } from "../..";
 
 

@@ -2,11 +2,11 @@ import colors from "colors";
 import logger from "../logger";
 import { SerialPort } from "serialport"
 import { Argument, Command, Option, program } from "commander";
-import { Modem } from "../iridium/su/960x";
-import { Transport } from "../iridium/gss/transport";
-import { SMTPTransport } from "../iridium/gss/transport/smtp";
-import { TCPTransport } from "../iridium/gss/transport/tcp";
-import { GSS } from "../iridium/gss";
+import { Modem } from "../isu/960x";
+import { Transport } from "../gss/transport";
+import { SMTPTransport } from "../gss/transport/smtp";
+import { TCPTransport } from "../gss/transport/tcp";
+import { GSS } from "../gss";
 
 program
   .version( '0.0.2' )
