@@ -1,20 +1,38 @@
 import { Moment } from "moment";
 
-export const MO_IE_HEADER_ID    = 0x01;
-export const MO_IE_PAYLOAD_ID   = 0x02;
-export const MO_IE_LOCATION_ID  = 0x03;
+export const MSG_REV    = 0x01
+export const MSG_H_LEN  = 3;
 
-export const MT_IE_HEADER_ID    = 0x41;
-export const MT_IE_PAYLOAD_ID   = 0x42;
+export const IE_H_LEN               = 3;
+
+export const IE_MO_HEADER_ID        = 0x01;
+export const IE_MO_HEADER_LEN       = 28;
+
+export const IE_MO_LOCATION_ID      = 0x03;
+export const IE_MO_LOCATION_LEN     = 11;
+
+export const IE_MO_CONFIRMATION_ID  = 0x05;
+export const IE_MO_CONFIRMATION_LEN = 1;
+
+export const IE_MO_PAYLOAD_ID       = 0x02;
+
+export const IE_MT_HEADER_ID        = 0x41;
+export const IE_MT_HEADER_LEN       = 21;
+
+export const IE_MT_CONFIRMATION_ID  = 0x44;
+export const IE_MT_CONFIRMATION_LEN = 25;
+
+export const IE_MT_PAYLOAD_ID       = 0x42;
+export const IE_MT_PRIORITY_ID      = 0x46;
 
 export interface Message {
-  protoRev?: number;
+  rev?: number;
   length?: number;
 }
 
 export namespace Message { 
 
-  interface InformationElement {
+  interface IE {
     id?: number;
     length?: number;
   }
@@ -28,7 +46,7 @@ export namespace Message {
 
   export namespace MO {
 
-    export interface Header extends InformationElement {
+    export interface Header extends IE {
   
       /**
        * Each call data record (CDR) maintained in the Iridium Gateway Database is given a unique value
@@ -65,17 +83,17 @@ export namespace Message {
       time: Moment;
     }
     
-    export interface Payload extends InformationElement {
+    export interface Payload extends IE {
       payload: Buffer;
     }
     
-    export interface Location extends InformationElement {
+    export interface Location extends IE {
       longitude: number;
       latitude: number;
       cepRadius: number;
     }
     
-    export interface Confirmation extends InformationElement {
+    export interface Confirmation extends IE {
       status: number;
     }
 
@@ -84,11 +102,12 @@ export namespace Message {
   export interface MT extends Message {
     header?: MT.Header;
     payload?: MT.Payload;
+    confirmation?: MT.Confirmation;
   }
   
   export namespace MT {
 
-    export interface Header extends InformationElement {
+    export interface Header extends IE {
 
       /**
        * Unique Client Message ID
@@ -112,15 +131,15 @@ export namespace Message {
 
     }
 
-    export interface Payload extends InformationElement {
+    export interface Payload extends IE {
       payload: Buffer;
     }
 
-    export interface Confirmation extends InformationElement {
+    export interface Confirmation extends IE {
       ucmid: Buffer;
       imei: string;
       autoid: number;
-      mtsts: number;
+      status: number;
     }
 
   }
