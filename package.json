@@ -1,8 +1,8 @@
 {
-  "name": "isbd-emulator",
+  "name": "isbd-emu",
   "version": "0.0.1",
   "description": "A simple emulator for Iridium SBD 9602/9603 transceivers",
-  "main": "build/index.js",
+  "main": "",
   "scripts": {
     "test": "jest",
     "build": "rm -rf build/ && tsc",
