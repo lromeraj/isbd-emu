@@ -42,9 +42,10 @@ export class MTServer extends EventEmitter {
     }` );
 
     const mtMsg = decodeMtMessage( buffer );
-      
+    
     if ( mtMsg ) {
       if ( this.transport ) {
+        console.log( mtMsg )
         // TODO: this.transport.sendMessage( mtMsg, encodeM.bind( this ) );
       } else {
         logger.error( `Could not send MT confirmation, TCP transport is not defined` );
