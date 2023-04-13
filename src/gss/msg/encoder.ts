@@ -1,5 +1,18 @@
 import { IE_H_LEN, IE_MO_HEADER_ID, IE_MO_HEADER_LEN, IE_MO_LOCATION_ID, IE_MO_LOCATION_LEN, IE_MO_PAYLOAD_ID, MSG_H_LEN, MSG_REV, Message } from ".";
 
+function encodeMsg( payload: Buffer[] ): Buffer {
+  
+  let offset = 0;
+  const msgHeaderBuf = Buffer.alloc( MSG_H_LEN );
+  const msgPayloadLength = payload.reduce( 
+    ( prev, cur ) => prev + cur.length, 0 );
+
+  offset = msgHeaderBuf.writeUint8( MSG_REV, offset );
+  offset = msgHeaderBuf.writeUint16BE( msgPayloadLength, offset );
+
+  return Buffer.concat([ msgHeaderBuf, ... payload ]);
+}
+
 function encodeMoHeader( msg: Message.MO.Header ): Buffer {
     
   const buffer = Buffer.alloc( IE_H_LEN + IE_MO_HEADER_LEN );
@@ -64,26 +77,20 @@ export function encodeMoMsg(
   msg: Message.MO
 ): Buffer {
   
-  let msgPayloadLength = 0;
-  const msgPayloadBuffers: Buffer[] = []
-
-  const appendIE = ( buffer: Buffer ) => {
-    msgPayloadLength += buffer.length;
-    msgPayloadBuffers.push( buffer );
-  }
+  let payload: Buffer[] = [] 
 
   if ( msg.header ) {
-    appendIE( 
+    payload.push( 
       encodeMoHeader( msg.header ) );
   }
 
   if ( msg.location ) {
-    appendIE( 
+    payload.push( 
       encodeMoLocation( msg.location ) );
   }
 
   if ( msg.payload ) {
-    appendIE( 
+    payload.push( 
       encodeMoPayload( msg.payload ) );
   }
 
@@ -91,14 +98,41 @@ export function encodeMoMsg(
     // TODO: ...
   }
 
-  let offset = 0;
-  const msgHeaderBuf = Buffer.alloc( MSG_H_LEN );
-  
-  offset = msgHeaderBuf.writeUint8( MSG_REV, offset );
-  offset = msgHeaderBuf.writeUint16BE( msgPayloadLength, offset );
-
-  return Buffer.concat([ msgHeaderBuf, ... msgPayloadBuffers ]);
-
+  return encodeMsg( payload );
 }
 
+function encodeMtPayload( msg: Message.MT.Payload ): Buffer {
+  return Buffer.from([])
+}
+
+function encodeMtHeader( msg: Message.MT.Header ): Buffer {
+  return Buffer.from([])
+}
+
+function encodeMtConfirmation( msg: Message.MT.Confirmation ): Buffer {
+  return Buffer.from([])
+}
+
+export function encodeMtMessage(
+  msg: Message.MT
+) {
+
+  const payload: Buffer[] = []
+
+  if ( msg.header ) {
+    payload.push( 
+      encodeMtHeader( msg.header ) );
+  }
+
+  if ( msg.payload ) {
+    payload.push( 
+      encodeMtPayload( msg.payload ) );
+  }
+  
+  if ( msg.confirmation ) {
+    // TODO: ...
+  }
+  
+  return encodeMsg( payload );
+}
 
