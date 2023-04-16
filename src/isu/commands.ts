@@ -28,11 +28,19 @@ export const CMD_SBDTC = ATCmd.wrapContext<Modem>( '+sbdtc', cmd => {
 })
 
 function writeSessionResponse( 
-  this: Modem, at: ATInterface, sessionResp: GSS.SessionResponse 
+  this: Modem, 
+  cmd: ATCmd<Modem>, at: ATInterface, sessionResp: GSS.SessionResponse 
 ) {
   
-  const resp = sprintf( 'SBDI:%d,%d,%d,%d,%d,%d',
-      sessionResp.mosts, this.momsn,
+  let prefix = '+SBDI';
+
+  if ( cmd.fqn.startsWith('+SBDIX') ) {
+    prefix = '+SBDIX' 
+  }
+
+  const resp = sprintf( '%s:%d,%d,%d,%d,%d,%d',
+      prefix,
+      sessionResp.mosts, sessionResp.momsn,
       sessionResp.mtsts, sessionResp.mtmsn, sessionResp.mt.length, sessionResp.mtq );
 
   at.writeLine( resp );
@@ -45,19 +53,16 @@ function writeSessionResponse(
 export const CMD_SBDIX = ATCmd.wrapContext<Modem>( '+sbdix', cmd => {
   cmd.onExec( async function( at ) {
     return this.initSession({ alert: false }).then( session => {
-      writeSessionResponse.apply( this, [ at, session ] );
+      writeSessionResponse.apply( this, [ cmd, at, session ] );
     })
   })
 
 })
 
-/**
- * 5.38 +SBDIX – Short Burst Data: Initiate an SBD Session Extended
-*/
 export const CMD_SBDIXA = ATCmd.wrapContext<Modem>( '+sbdixa', cmd => {
   cmd.onExec( async function( at ) {
     return this.initSession({ alert: true }).then( session => {
-      writeSessionResponse.apply( this, [ at, session ] );
+      writeSessionResponse.apply( this, [ cmd, at, session ] );
     })
   })
 })
