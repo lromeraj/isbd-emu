@@ -29,6 +29,10 @@ export class ATInterface {
 
   private atCmdStr = '';
   private atCmdMask = 'AT';
+
+  private enqueuedLines: { 
+    [key: string]: string 
+  };
   
   private requests: {
     delimiter: ATInterface.Delimiter,
@@ -39,6 +43,8 @@ export class ATInterface {
 
   constructor( serialPortOpts: ATInterface.SerialPortOptions ) {
     
+    this.enqueuedLines = {}
+
     this.sp = new SerialPort({ 
       path: serialPortOpts.path || '/dev/null', 
       baudRate: serialPortOpts.baudRate || 115200,
@@ -94,7 +100,16 @@ export class ATInterface {
       }
 
     })
-    
+
+  }
+
+  enqueueLine( str: string, id: string ) {
+  
+    if ( this.status == ATIStatus.WAITING ) {
+      this.writeLine( str );
+    } else {
+      this.enqueuedLines[ id ] = str;
+    }
 
   }
 
@@ -170,6 +185,7 @@ export class ATInterface {
           logger.error( `Internal command error => ${ err.stack }` )
 
         }).finally(() => {
+          this.writeEnqueuedLines();
           this.status = ATIStatus.WAITING;
         })
         
@@ -188,6 +204,13 @@ export class ATInterface {
 
   }
 
+  private writeEnqueuedLines() {
+    for ( let key in this.enqueuedLines ) {
+      this.writeLine( this.enqueuedLines[ key ] );
+    }
+    this.enqueuedLines = {};
+  }
+
   private getLineStart() {
     return this.verbose ? '\r\n' : '';
   }
@@ -198,29 +221,14 @@ export class ATInterface {
 
   setFlowControl( flowControl: boolean ) {
     this.sp.settings.rtscts = flowControl;
-    if ( flowControl ) {
-      logger.info( `Flow control enabled` );
-    } else {
-      logger.info( `Flow control disabled` );
-    }
   }
 
   setEcho( echo: boolean ) {
     this.echo = echo;
-    if ( echo ) {
-      logger.info( `Echo enabled` );
-    } else {
-      logger.info( `Echo disabled` );
-    }
   }
 
   setVerbose( verbose: boolean ) {
     this.verbose = verbose;
-    if ( verbose ) {
-      logger.info( `Verbose mode enabled` );
-    } else {
-      logger.info( `Verbose mode disabled` );
-    }
   }
 
   readRawUntil( 
@@ -250,6 +258,11 @@ export class ATInterface {
   }
 
   writeLine( line: string ) {
+
+    logger.debug( `Writing line: ${ 
+      colors.blue( this.escapeLine( line ) ) 
+    }` )
+
     this.writeRaw( Buffer.from( 
       this.getLineStart() + line + this.getLineEnd() ) )
   }

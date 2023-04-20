@@ -13,6 +13,29 @@ export const CMD_CGSN = ATCmd.wrapContext<Modem>( '+cgsn', cmd => {
     at.writeLine( this.imei );
   })
 })
+
+
+/**
+ * 5.21 +CGSN – Serial Number
+ */
+export const CMD_CIER = ATCmd.wrapContext<Modem>( '+cier', cmd => {
+  cmd.onSet( /(\d),(\d),(\d)/, async function( at, match ) {
+
+    this.cier.mode = parseInt( match[ 1 ] );
+    this.cier.sigind = parseInt( match[ 2 ] );
+    this.cier.svcind = parseInt( match[ 3 ] );
+
+    // this actually enqueues events because we are currently
+    // processing a command
+    this.updateCIEV( this.ciev );
+  })
+})
+
+export const CMD_SBDMTA = ATCmd.wrapContext<Modem>( '+sbdmta', cmd => {
+  cmd.onSet( /\d/, async function( at, match ) {
+    this.cier.mode = parseInt( match[ 0 ] );
+  })
+})
   
 /**
  * Transfer mobile terminated originated buffer 
@@ -28,11 +51,13 @@ export const CMD_SBDTC = ATCmd.wrapContext<Modem>( '+sbdtc', cmd => {
 })
 
 function writeSessionResponse( 
-  this: Modem, at: ATInterface, sessionResp: GSS.SessionResponse 
+  this: Modem, 
+  cmd: ATCmd<Modem>, at: ATInterface, sessionResp: GSS.SessionResponse 
 ) {
   
-  const resp = sprintf( 'SBDI:%d,%d,%d,%d,%d,%d',
-      sessionResp.mosts, this.momsn,
+  const resp = sprintf( '%s:%d,%d,%d,%d,%d,%d',
+      cmd.name.toUpperCase(),
+      sessionResp.mosts, sessionResp.momsn,
       sessionResp.mtsts, sessionResp.mtmsn, sessionResp.mt.length, sessionResp.mtq );
 
   at.writeLine( resp );
@@ -45,19 +70,16 @@ function writeSessionResponse(
 export const CMD_SBDIX = ATCmd.wrapContext<Modem>( '+sbdix', cmd => {
   cmd.onExec( async function( at ) {
     return this.initSession({ alert: false }).then( session => {
-      writeSessionResponse.apply( this, [ at, session ] );
+      writeSessionResponse.apply( this, [ cmd, at, session ] );
     })
   })
 
 })
 
-/**
- * 5.38 +SBDIX – Short Burst Data: Initiate an SBD Session Extended
-*/
 export const CMD_SBDIXA = ATCmd.wrapContext<Modem>( '+sbdixa', cmd => {
   cmd.onExec( async function( at ) {
     return this.initSession({ alert: true }).then( session => {
-      writeSessionResponse.apply( this, [ at, session ] );
+      writeSessionResponse.apply( this, [ cmd, at, session ] );
     })
   })
 })
