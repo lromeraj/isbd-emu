@@ -3,9 +3,11 @@ import nodemailer from "nodemailer";
 import { ATInterface } from "../at/interface";
 import { 
   CMD_CGSN, 
+  CMD_CIER, 
   CMD_SBDD, 
   CMD_SBDIX, 
   CMD_SBDIXA, 
+  CMD_SBDMTA, 
   CMD_SBDRB, 
   CMD_SBDRT, 
   CMD_SBDTC, 
@@ -15,6 +17,7 @@ import {
 import { GSS } from "../gss";
 
 import * as sio from "socket.io-client";
+import { TypeOfTag } from "typescript";
 
 export interface ModemOptions {
 
@@ -38,10 +41,23 @@ export interface MobileBuffer {
   checksum: number;
 }
 
+interface CIEV {
+  svca: number;
+  sigq: number;
+};
+
 export class Modem {
 
   imei: string;
   at: ATInterface;
+
+  ciev: CIEV;
+
+  cier: {
+    mode: number, // mode
+    sigind: number, // signal indicator
+    svcind: number, // service indicator
+  };
 
   momsn: number;
   mtmsn: number;
@@ -58,12 +74,41 @@ export class Modem {
 
   socket: sio.Socket;
   
+  updateCIEV( ciev: Partial<CIEV> ) {
+
+    Object.assign( this.ciev, ciev );
+
+    if ( this.cier.mode ) {
+
+      if ( this.cier.sigind && ciev.sigq !== undefined ) {
+        this.at.enqueueLine( `+CIEV:0,${ ciev.sigq }`, 'sigq' );
+      }
+      
+      if ( this.cier.svcind && ciev.svca !== undefined ) {
+        this.at.enqueueLine( `+CIEV:1,${ ciev.svca }`, 'svca' );
+      }
+
+    }
+
+  }
+
   constructor( options: ModemOptions ) {
 
     this.at = new ATInterface({
       baudRate: 19200,
       path: options.dte.path,
     });
+
+    this.cier = {
+      mode: 0, // mode
+      sigind: 0, // signal indicator
+      svcind: 0, // service indicator
+    };
+
+    this.ciev = {
+      sigq: 0,
+      svca: 0,
+    };
 
     const uri = options.gss.uri 
       ? options.gss.uri
@@ -85,8 +130,9 @@ export class Modem {
       CMD_SBDD,
       CMD_SBDWT,
       CMD_SBDRT,
+      CMD_CIER,
+      CMD_SBDMTA,
     ], this )
-
 
     this.socket = sio.connect( uri, {
       query: {
@@ -95,14 +141,18 @@ export class Modem {
     })
 
     this.socket.on( 'connect', () => {
+      this.updateCIEV({
+        svca: 1
+      })
       logger.debug( `GSS reached` );
     })
 
     this.socket.on( 'disconnect', () => {
+      this.updateCIEV({
+        svca: 0
+      })
       logger.debug( `GSS lost` );
     })
-
-
 
   }
 
@@ -114,7 +164,7 @@ export class Modem {
     alert?: boolean 
   }): Promise<GSS.SessionResponse> {
 
-    return new Promise( ( res, rej ) => {
+    return new Promise( ( resolve, reject ) => {
 
       const sessionReq: GSS.SessionRequest = {
         imei: this.imei,
@@ -124,16 +174,15 @@ export class Modem {
       }
 
       this.socket.on( 'ringAlert', () => {
-        // this.at.writeLine( 'SBDRING' ); // TODO
+        this.at.enqueueLine( `SBDRING`, 'ring' );
       })
-
 
       this.socket.timeout( 15000 ).emit( 
         'initSession', sessionReq, ( err: Error | null, sessionResp: GSS.SessionResponse ) => {
 
           if ( err ) {
             
-            res({
+            resolve({
               mosts: 32,
               mtsts: 0,
               momsn: this.momsn,
@@ -153,7 +202,7 @@ export class Modem {
             if ( sessionResp.mtsts === 1 ) {
               Modem.updateMobileBuffer( this.mtBuffer, sessionResp.mt );
             }
-            res( sessionResp );
+            resolve( sessionResp );
           }
       })
 
