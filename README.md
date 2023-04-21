@@ -12,7 +12,7 @@ The idea of this implementation is to be flexible in order to facilitate the pro
 
 This emulator actually consists in two different programs: `960x.js` emulator and `gss.js` emulator, the first one allows you to instantiate an _Iridium SBD 960X_ like transceiver and the `gss.js` allows you to emulate an Iridium GSS locally.
 
-> **NOTE**: this emulator can be run in different machines, this means that you can run the `9s0x.js` emulator on a different machine than where the transceiver `960x.js` is running.
+> **NOTE**: this emulator can be run in different machines, this means that you can run the `960x.js` emulator on a different machine from where the transceiver `960x.js` is running.
 
 > **IMPORTANT**: if you use a *WAN*, remember that all the data travels over TCP or HTTP/TCP without TLS (like Iridium does).
 
@@ -151,19 +151,17 @@ node gss.js \
   --mo-smtp-host smtp.domain.com \
   --mo-smtp-user your@email.com
 ```
-If you don't specify a destination address with `--mo-smtp-to`, emails will be sent to the email used for identification (to you). In other word, by default `--mo-smtp-to` is equal to `--mo-smtp-user`. 
+- If you don't specify a destination address with `--mo-smtp-to`, emails will be sent to the email used for identification (to you). In other words, by default `--mo-smtp-to` equals to `--mo-smtp-user`. 
 
-If you want to use Google's Gmail SMTP service refer to [this section](#generating-google-app-password-for-smtp).
+- If you want to use Google's Gmail SMTP service refer to [this section](#generating-google-application-passwords-for-smtp).
 
-If you want to use the _MO_ transport as _TCP_, you'll need a running instance of [Iridium Direct IP compatible server](https://glab.lromeraj.net/ucm/miot/tfm/iridium-sbd-server).
-
-The required option to enable _TCP_ transport is `--mo-tcp-host`, the port is `10801` by default:
+If you want to use the _MO_ transport as _TCP_, you'll need a running instance of [Iridium Direct IP compatible server](https://glab.lromeraj.net/ucm/miot/tfm/iridium-sbd-server). The required option to enable _TCP_ transport is `--mo-tcp-host`, the port is `10801` by default:
 ``` bash
 node gss.js \
   --mo-tcp-host sbd.lromeraj.net
 ```
 
-### Generating Google APP password for SMTP
+### Generating Google application passwords for SMTP
 
 Recently, [Google has disabled the option](https://www.google.com/settings/security/lesssecureapps) to allow less secure applications to have access to your account, this allowed to use your own personal password to give access to third-party apps which is not ideal. 
 
@@ -181,7 +179,7 @@ node gss.js \
 If the port is not specified the default value `25` will be used, Gmail's _SMTP_ works on: `25`, `465` and `587` ports.
 
 # Behavior
-Here we'll describe a little about how the Iridium SBD emulator operates depending on different conditions:
+Here we'll describe how the Iridium SBD emulator operates depending on different conditions:
 
 - When a _MO_ message reaches the GSS this message is queued and **will be sent over each defined transport**, if the message reaches it's destination over at least one transport it is considered as received by the vendor application, otherwise the message will be requeued, this is the expected original Iridium behavior.
 
