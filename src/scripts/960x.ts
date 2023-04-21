@@ -21,7 +21,7 @@ program.addOption(
 
 program.addOption(
   new Option( '--gss-port <string>', 'GSS Socket port' )
-    .default( 10801 ).argParser( v => parseInt( v ) ) )
+    .default( 10802 ).argParser( v => parseInt( v ) ) )
 
 program.addOption(
   new Option( '--gss-uri <string>', 'GSS Socket URI' )

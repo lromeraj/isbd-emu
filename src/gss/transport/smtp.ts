@@ -3,6 +3,7 @@ import nodemailer from "nodemailer";
 
 import { Transport } from ".";
 import { GSS } from "../index";
+import Mail from "nodemailer/lib/mailer";
 
 export class SMTPTransport extends Transport {
 
@@ -66,19 +67,25 @@ export class SMTPTransport extends Transport {
     }.sbd`;
   }
 
-  sendSessionMessage( msg: Transport.SessionMessage ): Promise<Transport.SessionMessage> {
+  sendSessionMessage( 
+    msg: Transport.SessionMessage 
+  ): Promise<Transport.SessionMessage> {
 
-    return this.transporter.sendMail({
-
+    const mailOpts: Mail.Options = {
       text: this.getTextFromMsg( msg ),
       to: this.options.to || this.options.user,
       subject: this.getSubjectFromMsg( msg ),
-      attachments: [{
+    }
+
+    if ( msg.payload.length > 0 ) {
+      mailOpts.attachments = [{
         filename: this.getFilenameFromMsg( msg ),
         content: msg.payload
       }]
+    }
 
-    }).then( () => msg );
+    return this.transporter.sendMail( mailOpts )
+      .then( () => msg );
 
   }
 

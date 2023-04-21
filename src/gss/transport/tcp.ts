@@ -3,6 +3,7 @@ import net, { Socket } from "net";
 
 import { Transport } from ".";
 import { encodeMoMsg } from "../msg/encoder";
+import { Message } from "../msg";
 
 export class TCPTransport extends Transport {
 
@@ -69,9 +70,10 @@ export class TCPTransport extends Transport {
 
   private encodeSessionMessage( msg: Transport.SessionMessage ): Buffer {
 
-    return encodeMoMsg({
+    const moMsg: Message.MO = {
       header: {
-        cdr: 0, // TODO: set CDR accordingly
+        cdr: 0,   // TODO: set CDR accordingly, 
+                  // TODO: this field should be included in the SessionMessage type
         momsn: msg.momsn,
         mtmsn: msg.mtmsn,
         imei: msg.imei,
@@ -83,12 +85,17 @@ export class TCPTransport extends Transport {
         longitude: msg.location.coord[ 1 ],
         cepRadius: msg.location.cepRadius,
       },
-      payload: {
+    }
+
+    if ( msg.payload.length > 0 ) {
+      moMsg.payload = {
         payload: msg.payload,
-      }
+        length: msg.payload.length,
+      };
+    }
 
-    })
-
+    return encodeMoMsg( moMsg );
+    
   }
 
 }

@@ -33,7 +33,7 @@ program.addOption(
 
 program.addOption(
   new Option( '--mo-tcp-port <number>', 'MO TCP transport port' )
-    .default( 10800 ).argParser( v => parseInt( v ) ) )
+    .default( 10801 ).argParser( v => parseInt( v ) ) )
 
 program.addOption(
   new Option( '--mt-server-port <number>', 'MT server port' )
@@ -41,7 +41,7 @@ program.addOption(
 
 program.addOption(
   new Option( '--mo-server-port <number>', 'MO server port' )
-    .default( 10801 ).argParser( v => parseInt( v ) ) )
+    .default( 10802 ).argParser( v => parseInt( v ) ) )
 
 // program.addOption(
 //   new Option( '--socket-host <string>', 'Socket server host' ) )

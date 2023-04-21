@@ -227,6 +227,10 @@ export class ATInterface {
     this.echo = echo;
   }
 
+  setQuiet( quiet: boolean ) {
+    this.quiet = quiet;
+  }
+
   setVerbose( verbose: boolean ) {
     this.verbose = verbose;
   }
@@ -291,7 +295,11 @@ export class ATInterface {
     })
   }
 
+  // TODO: accept string as parameter too ??
   private writeStatus( sts: ATCmd.Status ) {
+    
+    if ( this.quiet ) return;
+    
     if ( sts === ATCmd.Status.OK ) {
       this.writeLine( this.verbose ? 'OK' : '0' );
     } else {
