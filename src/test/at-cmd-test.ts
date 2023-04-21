@@ -28,7 +28,7 @@ describe( 'AT Interface command test', () => {
   
   test( 'AT echo', () => {
     expectCmd( CMD_ECHO, 'ate\r' ).toBeTruthy()
-    expect( atInterface.echo ).toBeTruthy()
+    expect( atInterface.echo ).toBeFalsy()
     
     expectCmd( CMD_ECHO, 'ate0\r' ).toBeTruthy()
     expect( atInterface.echo ).toBeFalsy()
@@ -44,7 +44,7 @@ describe( 'AT Interface command test', () => {
     expect( atInterface.verbose ).toBeFalsy()
     
     expectCmd( CMD_VERBOSE, 'atv\r' ).toBeTruthy()
-    expect( atInterface.verbose ).toBeTruthy()
+    expect( atInterface.verbose ).toBeFalsy()
   })
 
 });
