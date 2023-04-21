@@ -136,21 +136,19 @@ export class GSS {
       mtq: 0,
     }
     
-    if ( sessionReq.mo.length > 0 ) {
-
-      const transportMsg: Transport.SessionMessage = {
-        imei: sessionReq.imei,
-        momsn: sessionReq.momsn,
-        mtmsn: isu.mtmsn,
-        payload: sessionReq.mo,
-        time: moment(),
-        location: this.generateUnitLocation(),
-        status: GSS.Session.Status.TRANSFER_OK,
-      }
-      
-      isu.sessionMsgQueue.push( transportMsg );      
+    const transportMsg: Transport.SessionMessage = {
+      imei: sessionReq.imei,
+      momsn: sessionReq.momsn,
+      mtmsn: isu.mtmsn,
+      payload: sessionReq.mo,
+      time: moment(),
+      location: isu.location,
+      status: GSS.Session.Status.TRANSFER_OK,
     }
-
+    
+    isu.sessionMsgQueue.push( transportMsg );      
+    
+    // TODO: handle more error codes
     sessionResp.mosts = 0;
 
     return sessionResp;
