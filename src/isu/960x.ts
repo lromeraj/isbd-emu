@@ -46,6 +46,7 @@ interface CIEV {
   sigq: number;
 };
 
+// TODO: create a parent class named Modem and rename this to SBDModem
 export class Modem {
 
   imei: string;

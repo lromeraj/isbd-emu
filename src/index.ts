@@ -9,11 +9,12 @@ export namespace GSS {
   
   export const Decoder = decoder
   export const Encoder = encoder
-  export const Message = msg.Message;
 
-  export namespace Transport {
+  export import Message = msg.Message;
+  
+  export namespace Transport {  
     export const TCP = TCPTransport;
     export const SMTP = SMTPTransport;
   }
-
+  
 }

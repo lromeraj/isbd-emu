@@ -20,7 +20,7 @@ export class ATCmd<ContextType> {
     this.context = context;
 
     this.regExp = new RegExp( `^(at${
-      this.name.replace( /[/$&*+]/g, '\\$&' )
+      this.name.replace( /[/$&*+#]/g, '\\$&' )
     })(\\=\\?|\\=|\\?)?(.*)\r$`, 'i' );
 
   }

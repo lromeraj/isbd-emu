@@ -6,6 +6,8 @@ import { Modem } from "../isu/960x";
 program
   .version( '0.0.5' )
   .description( 'A simple emulator for Iridium SBD 960X transceivers' )
+  .option( '-v, --verbose', 'Verbosity level', 
+    (_, prev) => prev + 1, 1 )
 
 program.addOption( // TODO: rename
   new Option( '-p, --path <string>', 'serial port path' )
@@ -31,6 +33,8 @@ async function main() {
 
   program.parse();
   const opts = program.opts();
+
+  logger.setLevel( opts.verbose );
 
   if ( !/[0-9]{15}/.test( opts.imei ) ) {
     logger.error( `Given IMEI is not valid` );

@@ -11,6 +11,8 @@ import { GSS } from "../gss";
 program
   .version( '0.0.2' )
   .description( 'A simple emulator for Iridium GSS' )
+  .option( '-v, --verbose', 'Verbosity level', 
+    (_, prev) => prev + 1, 1 )
 
 program.addOption(
   new Option( '--mo-smtp-host <string>', 'MO SMTP transport host' ) )
@@ -43,13 +45,12 @@ program.addOption(
   new Option( '--mo-server-port <number>', 'MO server port' )
     .default( 10802 ).argParser( v => parseInt( v ) ) )
 
-// program.addOption(
-//   new Option( '--socket-host <string>', 'Socket server host' ) )
-
 async function main() {
 
   program.parse();
   const opts = program.opts();
+
+  logger.setLevel( opts.verbose );
 
   const transports: Transport[] = []
 

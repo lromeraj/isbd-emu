@@ -73,7 +73,7 @@ Options:
   -h, --help           display help for command
 ```
 
-In order to finally run the `960x.js` emulator you need to create a virtual serial port in order to communicate with it, you can use `socat` to achieve that:
+To finally run the `960x.js` emulator you need to create a virtual serial port in order to communicate with it, you can use `socat` to achieve that:
 
 ``` bash
 socat -dd pty,link=/tmp/tty,raw,echo=0 pty,link=/tmp/960x,raw,echo=0
@@ -81,7 +81,7 @@ socat -dd pty,link=/tmp/tty,raw,echo=0 pty,link=/tmp/960x,raw,echo=0
 
 Leave this executing in the foreground or in a different terminal. Now you can execute:
 ``` bash
-node 960x.js -p /tmp/960x
+node 960x.js -vvv -p /tmp/960x
 ```
 
 You should see an output like:
@@ -106,11 +106,11 @@ Press CTRL-A Z for help on special keys
 OK
 ```
 
-> **NOTE**: the modem currently does not have any type of persistance and all the data is volatile, when program dies the information "disappears" with it. This will change in a near future. 
+> **NOTE**: the modem currently does not have any type of persistance and all data is volatile, when program dies the information "disappears" with it. This will change in a near future. 
 
 Now we have to start the _GSS_ in order to allow the modem to send (_MO_) and receive (_MT_) messages.
 ``` bash
-node gss.js
+node gss.js -vvv
 ``` 
 
 This will output something like:
@@ -123,7 +123,7 @@ This will output something like:
 
 If you are still running the `960x.js` program the ISU will connect automatically to the _GSS_ (like if a satellite was reachable).
 
-The warning says that there are no _MO_ (_Mobile Originated_) transports defined, this transports are used in order to allow the _GSS_ to retransmit _MO_ messages from the _ISUs_ (_Iridium Subscriber Units_). To fix that, just specify at least one _MO_ transport.
+The warning says that there are no _MO_ (_Mobile Originated_) transports defined, this transports are used in order to allow the _GSS_ to retransmit _MO_ messages from the _ISUs_ (_Iridium Subscriber Units_) to the [vendor server application](https://glab.lromeraj.net/ucm/miot/tfm/iridium-sbd-server). To fix that, just specify at least one _MO_ transport.
 
 This emulator **supports two types of _MO_ transports**: `TCP` and `SMTP` (same as Iridium). You can use one or both at the same time. Use `--help` to see all the available command line options for the _GSS_:
 ``` txt
@@ -133,21 +133,22 @@ A simple emulator for Iridium GSS
 
 Options:
   -V, --version                output the version number
+  -v, --verbose                Verbosity level
   --mo-smtp-host <string>      MO SMTP transport host
   --mo-smtp-port <number>      MO SMTP transport port (default: 25)
   --mo-smtp-user <string>      MO SMTP transport username
   --mo-smtp-password <string>  MO SMTP transport password
   --mo-smtp-to <string>        MO SMTP transport destination address
   --mo-tcp-host <string>       MO TCP transport host
-  --mo-tcp-port <number>       MO TCP transport port (default: 10800)
+  --mo-tcp-port <number>       MO TCP transport port (default: 10801)
   --mt-server-port <number>    MT server port (default: 10800)
-  --mo-server-port <number>    MO server port (default: 10801)
+  --mo-server-port <number>    MO server port (default: 10802)
   -h, --help                   display help for command
 ```
 
 If you want to setup _MO_ transport as _SMTP_ you'll have to specify (at least): `--mo-smtp-host` and `--mo-smtp-user` options:
 ``` bash
-node gss.js \
+node gss.js -vvv \
   --mo-smtp-host smtp.domain.com \
   --mo-smtp-user your@email.com
 ```
@@ -157,7 +158,7 @@ node gss.js \
 
 If you want to use the _MO_ transport as _TCP_, you'll need a running instance of [Iridium Direct IP compatible server](https://glab.lromeraj.net/ucm/miot/tfm/iridium-sbd-server). The required option to enable _TCP_ transport is `--mo-tcp-host`, the port is `10801` by default:
 ``` bash
-node gss.js \
+node gss.js -vvv \
   --mo-tcp-host sbd.lromeraj.net
 ```
 
@@ -167,18 +168,18 @@ Recently, [Google has disabled the option](https://www.google.com/settings/secur
 
 Currently you can achieve the same, but requires a few extra steps: 
 1. You need to have enabled [two factor authentication](https://myaccount.google.com/signinoptions/two-step-verification).
-2. And the you can generate an application password [from here](https://myaccount.google.com/apppasswords). Save the password somewhere because you will not be able to see it again.
+2. And then you can generate an application password [from here](https://myaccount.google.com/apppasswords). Save the password somewhere because you will not be able to see it again.
 
 No you can execute the Iridium GSS using Gmail's _SMTP_:
 ``` bash
-node gss.js \
+node gss.js -vvv \
   --mo-smtp-host smtp.gmail.com \
   --mo-smtp-user example@gmail.com \
   --mo-smtp-password XXXXXXXXXXXXXXXX
 ```
-If the port is not specified the default value `25` will be used, Gmail's _SMTP_ works on: `25`, `465` and `587` ports.
+If the port is not specified, the default value `25` will be used, Gmail's _SMTP_ works on: `25`, `465` and `587` ports.
 
-# Behavior
+# General GSS behavior
 Here we'll describe how the Iridium SBD emulator operates depending on different conditions:
 
 - When a _MO_ message reaches the GSS this message is queued and **will be sent over each defined transport**, if the message reaches it's destination over at least one transport it is considered as received by the vendor application, otherwise the message will be requeued, this is the expected original Iridium behavior.
