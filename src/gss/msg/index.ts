@@ -119,12 +119,13 @@ export namespace Message {
        */
       imei: string;
 
-      flags: number;
+      flags?: number;
     }
 
     export namespace Header {
 
       export enum Flag {
+        NONE              = 0x0000,
         FLUSH_MT_QUEUE    = 0x0001,
         SEND_RING_ALERT   = 0x0002, 
       }

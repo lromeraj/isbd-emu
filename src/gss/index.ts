@@ -23,7 +23,7 @@ export class GSS {
   } = {};
   
   /**
-   * This server is to allow emulated ISUs to coomunicate
+   * This server is to allow emulated ISUs to communicate
    * with the GSS
    */
   private suServer: MOServer;

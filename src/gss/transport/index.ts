@@ -1,5 +1,4 @@
 import moment, { Moment } from "moment";
-
 import type { GSS } from "../index";
 
 export abstract class Transport {
@@ -23,3 +22,5 @@ export namespace Transport {
   }
 
 }
+
+// TODO: create FILE transport

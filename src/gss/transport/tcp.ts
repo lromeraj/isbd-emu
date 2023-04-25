@@ -15,6 +15,7 @@ export class TCPTransport extends Transport {
     this.options = options;
   }
 
+  // TODO: split this function
   sendMessage<T>( 
     msg: T, 
     encoder: ( msg: T ) => Buffer 
@@ -27,13 +28,11 @@ export class TCPTransport extends Transport {
         port: this.options.port,
       }, () => {
         client.write( encoder( msg ), err => {
-          
           if ( err ){
             rejectSending( err );
           } else {
             resolveSending();
           }
-
         });
       })
 
@@ -53,9 +52,7 @@ export class TCPTransport extends Transport {
         rejectSending( new Error( 'Socket timeout' ) );
       })
 
-      client.on( 'error', err => {
-        rejectSending( err );
-      });
+      client.on( 'error', rejectSending );
 
     }) 
 

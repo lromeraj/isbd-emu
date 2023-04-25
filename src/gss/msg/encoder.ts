@@ -134,6 +134,10 @@ function encodeMtHeader( msg: Message.MT.Header ): Buffer {
   let offset = 0;
   const buffer = Buffer.alloc( IE_H_LEN + IE_MT_HEADER_LEN );
 
+  if ( msg.flags === undefined ) {
+    msg.flags = Message.MT.Header.Flag.NONE;
+  }
+  
   offset = buffer.writeUint8( IE_MT_HEADER_ID, offset );
   offset = buffer.writeUint16BE( IE_MT_HEADER_LEN, offset );
   offset += msg.ucmid.copy( buffer, offset );
@@ -161,23 +165,23 @@ export function encodeMtMessage(
   msg: Message.MT
 ) {
 
-  const payload: Buffer[] = []
+  const msgChunks: Buffer[] = []
 
   if ( msg.header ) {
-    payload.push( 
+    msgChunks.push( 
       encodeMtHeader( msg.header ) );
   }
 
   if ( msg.payload ) {
-    payload.push( 
+    msgChunks.push( 
       encodeMtPayload( msg.payload ) );
   }
   
   if ( msg.confirmation ) {
-    payload.push( 
+    msgChunks.push( 
       encodeMtConfirmation( msg.confirmation ) );
   }
   
-  return encodeMsg( payload );
+  return encodeMsg( msgChunks );
 }
 
