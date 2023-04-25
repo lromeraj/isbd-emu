@@ -6,7 +6,9 @@ export abstract class Transport {
   abstract sendSessionMessage(
     msg: Transport.SessionMessage 
   ): Promise<Transport.SessionMessage>;
-  
+
+  abstract sendBuffer( buffer: Buffer ): Promise<Buffer>;
+
 }
 
 export namespace Transport {

@@ -15,12 +15,8 @@ export class TCPTransport extends Transport {
     this.options = options;
   }
 
-  // TODO: split this function
-  sendMessage<T>( 
-    msg: T, 
-    encoder: ( msg: T ) => Buffer 
-  ): Promise<Buffer> {
-
+  async sendBuffer( buffer: Buffer ): Promise<Buffer> {
+    
     return new Promise(( resolve, reject ) => {
       
       const respChunks: Buffer[] = [];
@@ -29,7 +25,7 @@ export class TCPTransport extends Transport {
         host: this.options.host,
         port: this.options.port,
       }, () => {
-        client.write( encoder( msg ), err => {
+        client.write( buffer, err => {
           if ( err ) {
             rejectSending( err );
           }
@@ -63,8 +59,16 @@ export class TCPTransport extends Transport {
 
       client.on( 'error', rejectSending );
 
-    }) 
+    })
 
+  }
+
+  // TODO: split this function
+  sendMessage<T>( 
+    msg: T, 
+    encoder: ( msg: T ) => Buffer 
+  ): Promise<Buffer> {
+    return this.sendBuffer( encoder( msg ) );
   }
 
   sendSessionMessage( 

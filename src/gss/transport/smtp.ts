@@ -24,6 +24,10 @@ export class SMTPTransport extends Transport {
 
   }
 
+  sendBuffer( buffer: Buffer ): Promise<Buffer> {
+    return Promise.resolve( Buffer.from([]) );
+  }
+
   private getStatusFromMsg( msg: Transport.SessionMessage ): string {
     const stsText = {
       [GSS.Session.Status.TRANSFER_OK]: 'Transfer OK',

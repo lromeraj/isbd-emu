@@ -24,6 +24,42 @@ program.addOption(
   new Option( '--tcp-port <number>', 'TCP transport port' )
     .default( 10800 ).argParser( v => parseInt( v ) ) )
 
+
+function sendMtMessage( transport: TCPTransport, buffer: Buffer ) {
+
+  logger.info( `Sending MT message ...` );
+
+  return transport.sendBuffer( buffer ).then( mtBuf => {
+
+    const mtMsg = decodeMtMessage( mtBuf );
+
+    if ( mtMsg ) {
+
+      const outFileName = `${ 
+        mtMsg.confirmation?.imei 
+      }_${ 
+        mtMsg.confirmation?.autoid 
+      }.sbd`
+      
+      return fs.writeFile( outFileName, mtBuf ).then( () => {
+        logger.success( `MT confirmation message written into ${ 
+          colors.green( outFileName ) 
+        }` );
+      }).catch( err => {
+        logger.error( `Could not write MT confirmation message => ${ err.message }`)
+      })
+
+    } else {
+      logger.error( `Could not decode MT confirmation message` );
+    }
+
+  }).catch( err => {
+    logger.error( `Could not send message => ${ err.message }` );
+  })
+
+}
+
+
 async function main() {
   program.parse();
 
@@ -32,68 +68,59 @@ async function main() {
 
   const [ srcFilePath ] = programArgs;
 
-  let message: Message | null = null;
-  let encoder: ((msg: Message) => Buffer) | null = null;
+  await fs.readFile( srcFilePath, 'utf-8' ).then( buffer => {
+    return JSON.parse( buffer );
+  }).then( jsonMsg => {
 
-  if ( fs.pathExistsSync( srcFilePath ) ) {
-    
-    logger.info( `Reading ${
-      colors.yellow( srcFilePath )
-    } ...`)
-
-    const strJsonMsg = fs.readFileSync( srcFilePath, 'utf-8' );
-    const jsonMsg = JSON.parse( strJsonMsg );
-  
     if ( jsonMsg 
       && jsonMsg.header 
       && jsonMsg.header.ucmid
       && jsonMsg.header.imei ) {
       
-      jsonMsg.header.ucmid = Buffer.from( jsonMsg.header.ucmid );
+      const mtMsgHeader = jsonMsg.header as Message.MT.Header;
 
+      mtMsgHeader.ucmid = Buffer.from( mtMsgHeader.ucmid );
+    
       if ( jsonMsg.payload.payload ) {
         jsonMsg.payload.payload = Buffer.from( jsonMsg.payload.payload );
       }
       
-      message = jsonMsg;
-      encoder = encodeMtMessage;
-    }
-   
-  } else {
-    
-    logger.error( `File ${
-      colors.yellow( srcFilePath )
-    } does not exist` )
-
-    process.exit( 1 );
-  }
-
-  if ( message && encoder ) {
-  
-    if ( opts.tcpHost && opts.tcpPort ) {
+      const encodedBuffer = encodeMtMessage( jsonMsg );
       
-      const transport = new TCPTransport({
-        host: opts.tcpHost,
-        port: opts.tcpPort,
-      })
-  
-      transport.sendMessage( message, encoder ).then( data => {
-        // logger.success( 'Message sent', data );
-        logger.debug( `Decoding confirmation ... `, decodeMtMessage( data ) );
+      const outFileName = `MT_${ 
+        mtMsgHeader.imei 
+      }_${ 
+        mtMsgHeader.ucmid.toString( 'hex' ).toUpperCase()
+      }.sbd`
+
+      return fs.writeFile( outFileName, encodedBuffer ).then( () => {
+        logger.success( `MT message written to ${ colors.green( outFileName ) }` );
       }).catch( err => {
-        logger.error( `Could not send message => ${ err.message }` );
+        logger.error( `Could not write MT message ${ 
+          colors.red( outFileName ) 
+        } => ${ err.message }` );
+      }).finally(() => {
+
+        if ( opts.tcpHost && opts.tcpPort ) {
+          const transport = new TCPTransport({
+            host: opts.tcpHost,
+            port: opts.tcpPort,
+          })
+
+          return sendMtMessage( transport, encodedBuffer );
+        }
+
       })
-  
-    } else {
-      const outFilePath = `out.bin`
-      fs.writeFileSync( outFilePath, encoder( message ) );
-      logger.success( `Data written to ${ colors.green( outFilePath ) }` )
+
+
+
+
     }
 
-  } else {
-    logger.error( `Encode failed, please check your input` );
-  }
+  })
   
 }
+
+
 
 main();
