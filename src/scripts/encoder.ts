@@ -35,7 +35,7 @@ function sendMtMessage( transport: TCPTransport, buffer: Buffer ) {
 
     if ( mtMsg ) {
 
-      const outFileName = `${ 
+      const outFileName = `MT_${ 
         mtMsg.confirmation?.imei 
       }_${ 
         mtMsg.confirmation?.autoid 

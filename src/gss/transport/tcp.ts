@@ -45,7 +45,6 @@ export class TCPTransport extends Transport {
       client.setTimeout( this.SOCKET_TIMEOUT );
       
       client.on( 'data', data => {
-        console.log( data )
         respChunks.push( data );
       })
 
