@@ -22,7 +22,7 @@ program.addOption(
 
 program.addOption(
   new Option( '--tcp-port <number>', 'TCP transport port' )
-    .default( 10801 ).argParser( v => parseInt( v ) ) )
+    .default( 10800 ).argParser( v => parseInt( v ) ) )
 
 async function main() {
   program.parse();
