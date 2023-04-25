@@ -13,6 +13,7 @@ program
   .version( '0.0.3' )
   .description( 'Message encoder for Iridium SBD' )
 
+
 program.addArgument( 
   new Argument( '[file]', 'JSON message file' ).argRequired() );
 
@@ -21,7 +22,7 @@ program.addOption(
 
 program.addOption(
   new Option( '--tcp-port <number>', 'TCP transport port' )
-    .default( 10800 ).argParser( v => parseInt( v ) ) )
+    .default( 10801 ).argParser( v => parseInt( v ) ) )
 
 async function main() {
   program.parse();
@@ -69,15 +70,16 @@ async function main() {
 
   if ( message && encoder ) {
   
-    if ( opts.tcpHost ) {
+    if ( opts.tcpHost && opts.tcpPort ) {
       
       const transport = new TCPTransport({
-        host: 'fmcecuador.satlink.es',
-        port: 10800,
+        host: opts.tcpHost,
+        port: opts.tcpPort,
       })
   
-      transport.sendMessage( message, encoder ).then( msg => {
-        logger.success( 'Message sent', msg );
+      transport.sendMessage( message, encoder ).then( data => {
+        // logger.success( 'Message sent', data );
+        logger.debug( `Decoding confirmation ... `, decodeMtMessage( data ) );
       }).catch( err => {
         logger.error( `Could not send message => ${ err.message }` );
       })

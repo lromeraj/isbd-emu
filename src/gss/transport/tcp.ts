@@ -19,19 +19,19 @@ export class TCPTransport extends Transport {
   sendMessage<T>( 
     msg: T, 
     encoder: ( msg: T ) => Buffer 
-  ): Promise<T> {
+  ): Promise<Buffer> {
 
     return new Promise(( resolve, reject ) => {
+      
+      const respChunks: Buffer[] = [];
 
       const client = new net.Socket().connect({
         host: this.options.host,
         port: this.options.port,
       }, () => {
         client.write( encoder( msg ), err => {
-          if ( err ){
+          if ( err ) {
             rejectSending( err );
-          } else {
-            resolveSending();
           }
         });
       })
@@ -41,12 +41,20 @@ export class TCPTransport extends Transport {
         reject( err );
       }
 
-      const resolveSending = () => {
+      const resolveSending = ( response: Buffer ) => {
         client.end();
-        resolve( msg );
+        resolve( response );
       }
 
       client.setTimeout( this.SOCKET_TIMEOUT );
+      
+      client.on( 'data', data => {
+        respChunks.push( data );
+      })
+
+      client.on( 'close', () => {
+        resolveSending( Buffer.concat( respChunks ) );
+      })
 
       client.on( 'timeout', () => {
         rejectSending( new Error( 'Socket timeout' ) );
@@ -62,7 +70,7 @@ export class TCPTransport extends Transport {
     sessionMsg: Transport.SessionMessage
   ): Promise<Transport.SessionMessage> {
     return this.sendMessage( sessionMsg, 
-      this.encodeSessionMessage.bind( this ) );
+      this.encodeSessionMessage.bind( this ) ).then( () => sessionMsg );
   }
 
   private encodeSessionMessage( msg: Transport.SessionMessage ): Buffer {
