@@ -156,7 +156,7 @@ function encodeMtConfirmation( msg: Message.MT.Confirmation ): Buffer {
   offset = buffer.writeUint16BE( IE_MT_CONFIRMATION_LEN, offset );
   offset += msg.ucmid.copy( buffer, offset );
   offset += buffer.write( msg.imei, offset, 15, 'ascii' );
-  offset = buffer.writeUint16BE( msg.status, offset )
+  offset = buffer.writeInt16BE( msg.status, offset )
 
   return buffer;
 }

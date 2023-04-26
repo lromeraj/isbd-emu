@@ -26,6 +26,10 @@ export class MOServer extends EventEmitter {
 
   private httpServer: http.Server;
   private socketServer: sio.Server;
+  
+  private sockets: {
+    [key: string]: sio.Socket | undefined
+  } = {}
 
   private handlers: MOServer.Handlers;
 
@@ -49,10 +53,12 @@ export class MOServer extends EventEmitter {
     })
       
     this.socketServer.on( 'connect', socket => {
-      
-      const imei = socket.handshake.query.imei; 
 
+      const imei = socket.handshake.query.imei; 
+      
       if ( typeof imei === 'string' ) {
+        
+        this.sockets[ imei ] = socket;
 
         socket.on( 'initSession', (
           sessionReq: GSS.SessionRequest, 
@@ -65,6 +71,7 @@ export class MOServer extends EventEmitter {
         })
         
         socket.on( 'disconnect', () => {
+          delete this.sockets[ imei ];
           logger.debug( `ISU ${ colors.bold( imei ) } disconnected` );
         })
 
@@ -78,8 +85,17 @@ export class MOServer extends EventEmitter {
 
   }
 
-}
+  sendRingAlert( imei: string ) {
+    
+    const socket = this.sockets[ imei ];
+    
+    if ( socket ) {
+      socket.emit( 'ring' );
+    }
 
+  }
+
+}
 
 export namespace MOServer {
 

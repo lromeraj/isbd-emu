@@ -17,7 +17,6 @@ import {
 import { GSS } from "../gss";
 
 import * as sio from "socket.io-client";
-import { TypeOfTag } from "typescript";
 
 export interface ModemOptions {
 
@@ -174,7 +173,7 @@ export class Modem {
         alert: opts.alert || false,
       }
 
-      this.socket.on( 'ringAlert', () => {
+      this.socket.on( 'ring', () => {
         this.at.enqueueLine( `SBDRING`, 'ring' );
       })
 
@@ -203,6 +202,7 @@ export class Modem {
             if ( sessionResp.mtsts === 1 ) {
               Modem.updateMobileBuffer( this.mtBuffer, sessionResp.mt );
             }
+            
             resolve( sessionResp );
           }
       })

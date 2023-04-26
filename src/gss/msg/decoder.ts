@@ -185,7 +185,7 @@ function decodeMtConfirmation(
     ucmid: buffer.subarray( offset + 3, offset + 7 ),
     imei: buffer.subarray( offset + 7, offset + 22 ).toString( 'ascii' ),
     autoid: buffer.readUint32BE( offset + 22 ),
-    status: buffer.readUint16BE( offset + 26 ),
+    status: buffer.readInt16BE( offset + 26 ),
   } 
   
   msg.confirmation = confirmation;

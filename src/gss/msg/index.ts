@@ -137,8 +137,17 @@ export namespace Message {
     }
 
     export interface Confirmation extends IE {
+
+      /**
+       * Unique Client Message ID
+       */
       ucmid: Buffer;
+
+      /**
+       * International Mobile Equipment Identity
+       */
       imei: string;
+      
       autoid: number;
       status: number;
     }
