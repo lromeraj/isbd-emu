@@ -13,7 +13,6 @@ program
   .version( '0.0.3' )
   .description( 'Message encoder for Iridium SBD' )
 
-
 program.addArgument( 
   new Argument( '[file]', 'JSON message file' ).argRequired() );
 
@@ -24,12 +23,13 @@ program.addOption(
   new Option( '--tcp-port <number>', 'TCP transport port' )
     .default( 10800 ).argParser( v => parseInt( v ) ) )
 
-
 function sendMtMessage( transport: TCPTransport, buffer: Buffer ) {
 
   logger.info( `Sending MT message ...` );
 
-  return transport.sendBuffer( buffer ).then( mtBuf => {
+  return transport.sendBuffer( buffer, { 
+    waitResponse: true
+  }).then( mtBuf => {
 
     const mtMsg = decodeMtMessage( mtBuf );
 
@@ -58,7 +58,6 @@ function sendMtMessage( transport: TCPTransport, buffer: Buffer ) {
   })
 
 }
-
 
 async function main() {
   program.parse();

@@ -54,13 +54,13 @@ export class GSS {
     this.mtServer = new MTServer({
       port: options.mtServer.port,
       handlers: {
-        mt: this.mt.bind( this ),
+        mtMsg: this.mtMsgHandler.bind( this ),
       }
     });
 
   }
 
-  private async mt( msg: Message.MT ): Promise<Message.MT> {
+  private async mtMsgHandler( msg: Message.MT ): Promise<Message.MT> {
     
     const flag = Message.MT.Header.Flag;
   
@@ -87,21 +87,15 @@ export class GSS {
       }
 
       if ( msg.payload ) {
-        
-        if ( !ringFlag ) {
-          confirmation.status = -4;
-        } else {  
-
-          if ( isu.mtMsgQueue.length >= 50 ) {
-            confirmation.status = -5;
-          } else {
-            isu.mtMsgQueue.push( msg );
-            confirmation.status = isu.mtMsgQueue.length;
-            
-            // TODO: send a second ring alert
-            this.moServer.sendRingAlert( msg.header.imei );
-
-          }
+    
+        if ( isu.mtMsgQueue.length >= 50 ) {
+          confirmation.status = -5;
+        } else {
+          isu.mtMsgQueue.push( msg );
+          confirmation.status = isu.mtMsgQueue.length;
+          
+          // TODO: send a second ring alert
+          this.moServer.sendRingAlert( msg.header.imei );
 
         }
 
@@ -232,7 +226,7 @@ export class GSS {
       sessionResp.mt = mtMsg.payload.payload;
       sessionResp.mtq = isu.mtMsgQueue.length;
 
-      isu.mtmsn++;
+      isu.mtmsn++; // ? Sure
     }
     
     const transportMsg: Transport.SessionMessage = {

@@ -50,18 +50,17 @@ export const CMD_SBDTC = ATCmd.wrapContext<Modem>( '+sbdtc', cmd => {
   })
 })
 
-function writeSessionResponse( 
-  this: Modem, 
-  cmd: ATCmd<Modem>, at: ATInterface, sessionResp: GSS.SessionResponse 
+
+function writeExtSessionResp( 
+  this: Modem, at: ATInterface, sessionResp: GSS.SessionResponse 
 ) {
   
   const resp = sprintf( '%s:%d,%d,%d,%d,%d,%d',
-      cmd.name.toUpperCase(),
+      '+SBDIX',
       sessionResp.mosts, sessionResp.momsn,
       sessionResp.mtsts, sessionResp.mtmsn, sessionResp.mt.length, sessionResp.mtq );
 
   at.writeLine( resp );
-
 }
 
 /**
@@ -70,7 +69,7 @@ function writeSessionResponse(
 export const CMD_SBDIX = ATCmd.wrapContext<Modem>( '+sbdix', cmd => {
   cmd.onExec( async function( at ) {
     return this.initSession({ alert: false }).then( session => {
-      writeSessionResponse.apply( this, [ cmd, at, session ] );
+      writeExtSessionResp.apply( this, [ at, session ] );
     })
   })
 
@@ -79,7 +78,7 @@ export const CMD_SBDIX = ATCmd.wrapContext<Modem>( '+sbdix', cmd => {
 export const CMD_SBDIXA = ATCmd.wrapContext<Modem>( '+sbdixa', cmd => {
   cmd.onExec( async function( at ) {
     return this.initSession({ alert: true }).then( session => {
-      writeSessionResponse.apply( this, [ cmd, at, session ] );
+      writeExtSessionResp.apply( this, [ at, session ] );
     })
   })
 })

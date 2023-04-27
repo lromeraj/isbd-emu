@@ -86,8 +86,10 @@ export class MOServer extends EventEmitter {
   }
 
   sendRingAlert( imei: string ) {
-    
+
     const socket = this.sockets[ imei ];
+    
+    logger.debug( `Sending ring alert to ${ imei }` );
     
     if ( socket ) {
       socket.emit( 'ring' );

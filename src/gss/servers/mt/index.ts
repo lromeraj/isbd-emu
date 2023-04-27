@@ -21,7 +21,7 @@ export class MTServer extends EventEmitter {
     super();
 
     this.handlers = {
-      mt: () => Promise.reject( new Error('Not implemented') )
+      mtMsg: () => Promise.reject( new Error('Not implemented') )
     }
 
     Object.assign( this.handlers, options.handlers );
@@ -53,7 +53,7 @@ export class MTServer extends EventEmitter {
     const mtMsg = decodeMtMessage( buffer );
     
     if ( mtMsg ) {
-      return this.handlers.mt( mtMsg );
+      return this.handlers.mtMsg( mtMsg );
     } else {
       throw new Error( `Could not decode MT message` );
     }
@@ -63,7 +63,7 @@ export class MTServer extends EventEmitter {
   private async socketHandler( socket: net.Socket ) { 
 
     const MAX_MSG_LEN = 1024; // maximum message length
-    const SOCKET_TIMEOUT = 5000; // milliseconds
+    const SOCKET_TIMEOUT = 8000; // milliseconds
     const PROTO_HEADER_LEN = 3; // protocol header length
     
     let bytesRead = 0;
@@ -107,19 +107,18 @@ export class MTServer extends EventEmitter {
 
       }
 
+      const sendConfirmation = ( mtConfirm: Message.MT ) => {
+        socket.write( encodeMtMessage( mtConfirm ), err => {
+          socket.end();
+        });
+      }
+
       if ( bytesRead === bytesToRead ) {
 
-        this.mtMsgQueue.push( buffersRead ).then( mtConfirm => {
-          
-          console.log( mtConfirm );
-          
-          socket.write( encodeMtMessage( mtConfirm ), () => {
-            socket.end();
-          });
-
-        }).catch( err => {
-          socket.destroy();
-          logger.error( `Error processing MT message => ${ err.message }` );
+        this.mtMsgQueue.push( buffersRead ).then( sendConfirmation )
+          .catch( err => {
+            socket.destroy();
+            logger.error( `Error processing MT message => ${ err.message }` );
         })
 
       } else if ( bytesRead > bytesToRead ) {
@@ -135,7 +134,7 @@ export class MTServer extends EventEmitter {
 export namespace MTServer {
 
   export interface Handlers {
-    mt: Handler;
+    mtMsg: Handler;
   };
 
   export type Handler = ( msg: Message.MT ) => Promise<Message.MT>;

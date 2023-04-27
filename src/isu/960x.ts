@@ -142,16 +142,24 @@ export class Modem {
 
     this.socket.on( 'connect', () => {
       this.updateCIEV({
-        svca: 1
+        svca: 1,
+        sigq: 5,
       })
       logger.debug( `GSS reached` );
     })
 
     this.socket.on( 'disconnect', () => {
+      
       this.updateCIEV({
-        svca: 0
-      })
+        svca: 0,
+        sigq: 0,
+      });
+
       logger.debug( `GSS lost` );
+    })
+
+    this.socket.on( 'ring', () => {
+      this.at.enqueueLine( `SBDRING`, 'ring' );
     })
 
   }
@@ -173,10 +181,6 @@ export class Modem {
         alert: opts.alert || false,
       }
 
-      this.socket.on( 'ring', () => {
-        this.at.enqueueLine( `SBDRING`, 'ring' );
-      })
-
       this.socket.timeout( 15000 ).emit( 
         'initSession', sessionReq, ( err: Error | null, sessionResp: GSS.SessionResponse ) => {
 
@@ -184,10 +188,10 @@ export class Modem {
             
             resolve({
               mosts: 32,
-              mtsts: 0,
+              mtsts: 2,
               momsn: this.momsn,
               mtmsn: this.mtmsn,
-              mt: this.mtBuffer.buffer,
+              mt: Buffer.from([]),
               mtq: 0
             });
 

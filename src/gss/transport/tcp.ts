@@ -15,7 +15,13 @@ export class TCPTransport extends Transport {
     this.options = options;
   }
 
-  async sendBuffer( buffer: Buffer ): Promise<Buffer> {
+  async sendBuffer( buffer: Buffer, _opts?: { 
+    waitResponse: boolean
+  }): Promise<Buffer> {
+    
+    const opts = {
+      waitResponse: _opts?.waitResponse || false
+    }
     
     return new Promise(( resolve, reject ) => {
       
@@ -28,6 +34,10 @@ export class TCPTransport extends Transport {
         client.write( buffer, err => {
           if ( err ) {
             rejectSending( err );
+          } else {
+            if ( !opts.waitResponse ) {
+              resolveSending( Buffer.alloc( 0 ) );
+            }
           }
         });
       })
@@ -65,9 +75,12 @@ export class TCPTransport extends Transport {
   // TODO: split this function
   sendMessage<T>( 
     msg: T, 
-    encoder: ( msg: T ) => Buffer 
+    encoder: ( msg: T ) => Buffer,
+    _opts?: { 
+      waitResponse: boolean
+    }
   ): Promise<Buffer> {
-    return this.sendBuffer( encoder( msg ) );
+    return this.sendBuffer( encoder( msg ), _opts );
   }
 
   sendSessionMessage( 
