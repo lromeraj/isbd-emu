@@ -4,6 +4,7 @@ import winston, { LeveledLogMethod, Logger } from "winston";
 interface CustomLogger extends Logger {
   success: LeveledLogMethod,
   setLevel: ( lvl: number | string ) => void,
+  disableTTY: () => void
 }
 
 const levels: {
@@ -25,6 +26,14 @@ const levelFormat: {
   "success":  `[ ${colors.bold.green("OK")} ]`,
   "debug":    `[${colors.bold.magenta("DBUG")}]`,
 }
+
+const consoleTransport = new winston.transports.Console({ 
+  stderrLevels: [ 'error', 'success', 'warn', 'info', 'debug' ] 
+})
+
+const ttyConsoleTransport = new winston.transports.Console({
+  stderrLevels: [ 'error' ] 
+})
 
 const logger = winston.createLogger({
   level: 'debug',
@@ -50,11 +59,19 @@ const logger = winston.createLogger({
     
     })  
   ),
+
   transports: [
-    new winston.transports.Console()
+    ttyConsoleTransport
   ],
+
   exitOnError: false
+
 }) as CustomLogger;
+
+
+logger.disableTTY = () => {
+  logger.remove( ttyConsoleTransport ).add( consoleTransport );
+}
 
 logger.setLevel = ( targetLevel: number | string ) => {
   

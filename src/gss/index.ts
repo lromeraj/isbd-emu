@@ -14,11 +14,13 @@ interface SubscriberUnit {
   momsn: number;
   mtmsn: number;
   location: GSS.UnitLocation;
-  sessionWorkerQueue: queueAsPromised<Transport.SessionMessage>;
-  mtMsgQueue: Message.MT[];
+  mtMessages: Message.MT[];
+  sessionsQueue: queueAsPromised<Transport.SessionMessage>;
 }
  
 export class GSS {
+
+  private autoId: number = 0;
 
   private subscriberUnits: { 
     [key: string]: SubscriberUnit
@@ -45,7 +47,7 @@ export class GSS {
     this.transports = options.transports;
 
     this.moServer = new MOServer({
-      port: options.suServer.port,
+      port: options.moServer.port,
       handlers: {
         initSession: this.initSession.bind( this )
       }
@@ -60,6 +62,10 @@ export class GSS {
 
   }
 
+  private getAutoId(): number {
+    return this.autoId++;
+  }
+
   private async mtMsgHandler( msg: Message.MT ): Promise<Message.MT> {
     
     const flag = Message.MT.Header.Flag;
@@ -69,7 +75,7 @@ export class GSS {
       const isu = this.getISU( msg.header.imei );
 
       const confirmation: Message.MT.Confirmation = {
-        autoid: 0,
+        autoid: this.getAutoId(),
         imei: msg.header.imei,
         ucmid: msg.header.ucmid,
         status: 0
@@ -83,16 +89,16 @@ export class GSS {
       const flushFlag = msg.header.flags & flag.FLUSH_MT_QUEUE;
       
       if ( flushFlag ) { 
-        isu.mtMsgQueue = [];
+        isu.mtMessages = [];
       }
 
       if ( msg.payload ) {
     
-        if ( isu.mtMsgQueue.length >= 50 ) {
+        if ( isu.mtMessages.length >= 50 ) {
           confirmation.status = -5;
         } else {
-          isu.mtMsgQueue.push( msg );
-          confirmation.status = isu.mtMsgQueue.length;
+          isu.mtMessages.push( msg );
+          confirmation.status = isu.mtMessages.length;
           
           // TODO: send a second ring alert
           this.moServer.sendRingAlert( msg.header.imei );
@@ -136,7 +142,6 @@ export class GSS {
   // private increaseMTMSN( isu: SubscriberUnit  ) {
   //   isu.mtmsn = ( isu.mtmsn + 1 ) & 0xFFFF;
   // }
-
   private async sessionMsgWorker( msg: Transport.SessionMessage ) {
 
     const promises = this.transports.map(
@@ -163,7 +168,7 @@ export class GSS {
       } else {
         
         setTimeout( () => {
-          this.subscriberUnits[ msg.imei ].sessionWorkerQueue.push( msg )
+          this.subscriberUnits[ msg.imei ].sessionsQueue.push( msg )
         }, 30000 ); // TODO: this should be incremental
         
         logger.error( `MO #${
@@ -189,9 +194,9 @@ export class GSS {
         momsn: 0,
         mtmsn: 0,
         location: this.generateUnitLocation(),
-        sessionWorkerQueue: fastq.promise(
+        sessionsQueue: fastq.promise(
           this.sessionMsgWorker.bind( this ), 1 ),
-        mtMsgQueue: [],
+        mtMessages: [],
       }
 
     }
@@ -216,7 +221,7 @@ export class GSS {
       mtq: 0,
     };
 
-    const mtMsg = isu.mtMsgQueue.shift();
+    const mtMsg = isu.mtMessages.shift();
 
     if ( mtMsg?.payload ) {
 
@@ -224,22 +229,22 @@ export class GSS {
       sessionResp.mtmsn = isu.mtmsn;
 
       sessionResp.mt = mtMsg.payload.payload;
-      sessionResp.mtq = isu.mtMsgQueue.length;
+      sessionResp.mtq = isu.mtMessages.length;
 
-      isu.mtmsn++; // ? Sure
+      isu.mtmsn++;
     }
     
     const transportMsg: Transport.SessionMessage = {
+      time: moment(),
       imei: sessionReq.imei,
       momsn: sessionReq.momsn,
       mtmsn: isu.mtmsn,
       payload: sessionReq.mo,
-      time: moment(),
       location: isu.location,
       status: GSS.Session.Status.TRANSFER_OK,
     }
     
-    isu.sessionWorkerQueue.push( transportMsg );      
+    isu.sessionsQueue.push( transportMsg );      
     
     // TODO: handle more error codes
     sessionResp.mosts = 0;
@@ -263,7 +268,7 @@ export namespace GSS {
       port: number;
       transport?: TCPTransport;
     };
-    suServer: { 
+    moServer: { 
       port: number;
     };
     transports: Transport[];

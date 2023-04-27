@@ -91,7 +91,7 @@ async function main() {
       port: opts.mtServerPort,
       transport: tcpTransport,
     },
-    suServer: {
+    moServer: {
       port: opts.moServerPort
     },
   })

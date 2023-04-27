@@ -155,3 +155,84 @@ export namespace Message {
   }
 
 }
+
+
+export function isMO( object: { [key: string]: any } ): boolean {
+  if ( object.header ) {
+    if ( object.header.cdr !== undefined ) {
+      return true;
+    }
+  }
+  return false;
+}
+
+export function isMT( object: { [key: string]: any } ): boolean {
+  if ( object.header ) {
+    if ( object.header.ucmid !== undefined ) {
+      return true;
+    }
+  } else if ( object.confirmation ) {
+
+    if ( object.confirmation.ucmid !== undefined 
+        && object.confirmation.autoid !== undefined ) {
+      return true;
+    }
+  }
+  return false;
+} 
+
+
+function toJSONObject( object: { [key: string]: any } ) {
+  for ( let key in object ) {
+
+    const val = object[ key ];
+
+    if ( val instanceof Buffer ) {
+      object[ key ] = [ ... val ];
+    } else if ( typeof val === 'string' && key === 'payload' ) {
+      object[ key ] = [ ... Buffer.from( val ) ];
+    } else if ( typeof val === 'object' ) {
+      toJSONObject( val );
+    }
+  }
+}
+
+export function msgToJSON( object: { 
+  [key: string]: any 
+}, pretty: boolean = false): string {
+
+  const objCopy = { ...object };
+
+  toJSONObject( objCopy );
+
+  if ( pretty ) {
+    return JSON.stringify( objCopy, null, '\t' );
+  } else {
+    return JSON.stringify( objCopy );
+  }
+}
+
+function fromJSONObject( 
+  object: { [key: string]: any } 
+) {
+
+  for ( let key in object ) {
+
+    const val = object[ key ];
+    
+    if ( val instanceof Array 
+      || ( typeof val === 'string' && key === 'payload' ) ) {
+      
+      object[ key ] = Buffer.from( val );
+    } else if ( typeof val === 'object' ) {
+      fromJSONObject( val );
+    }
+
+  }
+}
+
+export function msgFromJSON( jsonStr: string ) {
+  const obj = JSON.parse( jsonStr );
+  fromJSONObject( obj );
+  return obj;
+}
