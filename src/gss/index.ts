@@ -111,7 +111,7 @@ export class GSS {
 
         if ( ringFlag ) {
           this.moServer.sendRingAlert( msg.header.imei );
-        } else {
+        } else if ( !flushFlag ) {
           confirmation.status = -4;
         }
 

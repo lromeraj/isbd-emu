@@ -50,11 +50,34 @@ node gss.js
 
 For more details, see [how to run the emulator](#running-the-emulator).
 
+# Setting up the environment
+Apart from the emulator itself, this repository also includes additional CLI tools as you'll see in the following sections, so, instead of having to specify the full path of the different scripts or making additional installation steps, you can use the `isbd-env.sh` script located in the root of this repository to load all required environment variables and bash completions. Use the following command to load the Iridium SBD environment:
+``` bash
+source isbd-env.sh
+```
+
+> **NOTE**: if you want to avoid to load the environment each time you open a new terminal, you can use `.bashrc` file located in the home directory of your current user and automatically load the Iridium SBD environment.
+
+Now you should be able to execute things like:
+``` bash
+isbd gss --help
+```
+
+You can use autocomplete, for example, for the first arguments:
+``` bash
+$ isbd <tab><tab>
+960x       decode     encode     gss        transport 
+```
+
+> **NOTE**: autocompletion is under development and does not support all possible command line arguments. 
+
+Most of the command line samples showed in this `README` use the Iridium SBD environment.
+
 # Running the emulator
 
 If you want to see all the possible command line arguments of any script, simply append `--help` flag:
 ``` bash
-node 960x.js --help
+isbd 960x --help
 ``` 
 
 This (actually) results in:
@@ -81,7 +104,7 @@ socat -dd pty,link=/tmp/tty,raw,echo=0 pty,link=/tmp/960x,raw,echo=0
 
 Leave this executing in the foreground or in a different terminal. Now you can execute:
 ``` bash
-node 960x.js -vvv -p /tmp/960x
+isbd 960x -vvv -p /tmp/960x
 ```
 
 You should see an output like:
@@ -92,25 +115,30 @@ Now you can communicate with it, using, for example, `minicom`:
 ``` bash
 minicom -D /tmp/tty
 ```
-Try to send the test `AT` command:
+
+Try to send the test `AT` command. If you want to see what you type, you have to enable echo by following one of this options:
+  1. Using `minicom` local echo, press `Ctrl+A` and then `E`. 
+  2. Using native AT Hayes echo command, type `ATE1` and then press `Enter`.
+
+Output example:
 ``` txt
 Welcome to minicom 2.7.1
 
 OPTIONS: I18n 
 Compiled on Dec 23 2019, 02:06:26.
-Port /tmp/qemu, 10:49:27
+Port /tmp/qemu, 17:10:48
 
 Press CTRL-A Z for help on special keys
 
+at
 
 OK
 ```
 
-> **NOTE**: the modem currently does not have any type of persistance and all data is volatile, when program dies the information "disappears" with it. This will change in a near future. 
 
 Now we have to start the _GSS_ in order to allow the modem to send (_MO_) and receive (_MT_) messages.
 ``` bash
-node gss.js -vvv
+isbd gss -vvv
 ``` 
 
 This will output something like:
@@ -121,7 +149,7 @@ This will output something like:
 2023-04-21T08:58:24.876Z [DBUG]: 	ISU 527695889002193 connected 
 ```
 
-If you are still running the `960x.js` program the ISU will connect automatically to the _GSS_ (like if a satellite was reachable).
+If you are still running the `960x` program the _ISU_ will connect automatically to the _GSS_ (like if a satellite was reachable).
 
 The warning says that there are no _MO_ (_Mobile Originated_) transports defined, this transports are used in order to allow the _GSS_ to retransmit _MO_ messages from the _ISUs_ (_Iridium Subscriber Units_) to the [vendor server application](https://glab.lromeraj.net/ucm/miot/tfm/iridium-sbd-server). To fix that, just specify at least one _MO_ transport.
 
@@ -148,7 +176,7 @@ Options:
 
 If you want to setup _MO_ transport as _SMTP_ you'll have to specify (at least): `--mo-smtp-host` and `--mo-smtp-user` options:
 ``` bash
-node gss.js -vvv \
+isbd gss -vvv \
   --mo-smtp-host smtp.domain.com \
   --mo-smtp-user your@email.com
 ```
@@ -156,13 +184,14 @@ node gss.js -vvv \
 
 - If you want to use Google's Gmail SMTP service refer to [this section](#generating-google-application-passwords-for-smtp).
 
-If you want to use the _MO_ transport as _TCP_, you'll need a running instance of [Iridium Direct IP compatible server](https://glab.lromeraj.net/ucm/miot/tfm/iridium-sbd-server). The required option to enable _TCP_ transport is `--mo-tcp-host`, the port is `10801` by default:
+If you want to use the _MO_ transport as _TCP_, you'll need a running instance of [Iridium Direct IP compatible server](https://glab.lromeraj.net/ucm/miot/tfm/iridium-sbd-server). The required option to enable _TCP_ transport is `--mo-tcp-host`, the port is `10801` by default. For example:
 ``` bash
-node gss.js -vvv \
-  --mo-tcp-host sbd.lromeraj.net
+isbd gss -vvv \
+  --mo-tcp-host localhost \
+  --mo-tcp-port 10801
 ```
 
-### Generating Google application passwords for SMTP
+## Generating Google application passwords for SMTP
 
 Recently, [Google has disabled the option](https://www.google.com/settings/security/lesssecureapps) to allow less secure applications to have access to your account, this allowed to use your own personal password to give access to third-party apps which is not ideal. 
 
@@ -170,18 +199,121 @@ Currently you can achieve the same, but requires a few extra steps:
 1. You need to have enabled [two factor authentication](https://myaccount.google.com/signinoptions/two-step-verification).
 2. And then you can generate an application password [from here](https://myaccount.google.com/apppasswords). Save the password somewhere because you will not be able to see it again.
 
-No you can execute the Iridium GSS using Gmail's _SMTP_:
+Now you can execute the Iridium GSS using Gmail's _SMTP_:
 ``` bash
-node gss.js -vvv \
+isbd gss -vvv \
   --mo-smtp-host smtp.gmail.com \
   --mo-smtp-user example@gmail.com \
   --mo-smtp-password XXXXXXXXXXXXXXXX
 ```
 If the port is not specified, the default value `25` will be used, Gmail's _SMTP_ works on: `25`, `465` and `587` ports.
 
+## MO message sample
+
+If you want to manually send a simple MO message for testing purposes, here you have an example on how to do that.
+1. First make sure you have `socat`, `960x` and `gss` programs currently running.
+2. Open serial monitor using `minicom`:
+    ``` bash
+    minicom -D /tmp/tty
+    ```
+3. In order to send your message, you have to first write it in the MO buffer of the ISU, using the following AT command:
+    ``` bash
+    AT+SBDWT=My awesome message
+    ```
+4. To send (or receive) messages you have to request a session with the Iridium GSS using the following AT command:
+    ``` txt
+    AT+SBDIX
+    ```
+5. If everything is set up correctly and the specified transports in the GSS are valid, you should receive the message previously sent over those transports. The log of the GSS program should look like:
+    ``` txt
+    2023-04-28T13:06:00.141Z [DBUG] @ gss: MO #0 sent from ISU 527695889002193
+    2023-04-28T13:06:01.277Z [DBUG] @ gss: MO #1 sent from ISU 527695889002193
+    ```
+
+For further reference, [take a look to the Iridium 9602 SBD Transceiver Developer’s Guide](http://nearspace.ru/doc/Iridium-9602-SBD-Transceiver-Product-Developers-Guide.pdf).
+
+> **NOTE**: some AT commands are not currently supported and you'll receive an `ERROR` response code in such cases.
+
+
+# Tools
+This emulator also includes additional CLI tools which may result useful while developing applications. This tools consist in three different scripts:
+  - [Encoder](#encoder-script) script which allows to encode Iridium Direct IP messages.
+  - [Decoder](#decoder-script) script which allows to decode Iridium Direct IP messages.
+  - [Transport](#transport-script) script which allows to send Iridium Direct IP messages.
+
+## Encoder script
+
+This script can be invoked like:
+``` bash
+isbd encode --help
+```
+
+Showing an output like:
+``` txt
+Usage: encode [options] [file]
+
+Message encoder for Iridium SBD
+
+Arguments:
+  file           JSON message file
+
+Options:
+  -V, --version  output the version number
+  -h, --help     display help for command
+```
+
+This script expects an input formatted in JSON, depending on the attributes of the given JSON it will detect if it is a _MO_ message or a _MT_ message.
+
+### Encoding MT messages
+
+If you want to encode a _MT_ message you'll have to specify at least the header and the payload:
+``` json 
+{
+  "header": {
+    "imei": "527695889002193",
+    "ucmid": [0,0,0,0],
+    "flags": 0
+  },
+  "payload": {
+    "payload": "Example message"
+  }
+}
+```
+
+> **NOTE**: you could think that the `payload` attribute is redundant, but this is due to the structure of the Iridium Direct IP protocol specification, each root attribute in the JSON are known as _IEs_ (Information Elements) which have some extra attributes that you don't have to specify here, those attributes will be filled automatically by the encoder. See [this manual](https://www.antrax.de/downloads/iridium-shield/quake-datasheets/iridium%20short%20burst%20data%20service%20developers%20guide%20v2%2001%20v1_0.pdf) if you want to know more about this.
+
+Of course, you can specify only the header if you want to play with the flags attribute:
+``` json 
+{
+  "header": {
+    "imei": "527695889002193",
+    "ucmid": [0,0,0,0],
+    "flags": 1
+  }
+}
+```
+This message will flush the MT message queue in the GSS.
+
+> **NOTE**: Iridium SBD supports multiple flags, but this emulator supports (by the moment) only two flags: `1` and `2`.  
+>   - `1` - Flush MT queue  
+>   - `2` - Send ring alert  
+
+
+## Decoder script
+You can invoke to de decoder using the following command:
+``` bash
+isbd decoder --help
+```
+
+## Transport script
+
+___
+
+
 # General GSS behavior
 Here we'll describe how the Iridium SBD emulator operates depending on different conditions:
 
 - When a _MO_ message reaches the GSS this message is queued and **will be sent over each defined transport**, if the message reaches it's destination over at least one transport it is considered as received by the vendor application, otherwise the message will be requeued, this is the expected original Iridium behavior.
+- The emulator currently does not have any type of persistance and all data is volatile, when the program dies the information "disappears" with it. This will change in a near future. 
 
-> **NOTE**: currently MT server is under development, but all decoders and encoders for TCP packets are ready to be used, just need some more time to integrate them.
+> ~~**NOTE**: currently MT server is under development, but all decoders and encoders for TCP packets are ready to be used, just need some more time to integrate them.~~
