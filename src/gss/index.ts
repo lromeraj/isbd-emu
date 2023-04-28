@@ -5,7 +5,7 @@ import type { queueAsPromised } from "fastq";
 import moment from "moment";
 import * as logger from "../logger";
 import colors from "colors";
-import { MOServer } from "./servers/mo";
+import { ISUServer } from "./servers/isu";
 import { MTServer } from "./servers/mt";
 import { TCPTransport } from "./transport/tcp";
 import { IE_MO_CONFIRMATION_LEN, Message } from "./msg";
@@ -32,7 +32,7 @@ export class GSS {
    * This server is to allow emulated ISUs to communicate
    * with the GSS
    */
-  private moServer: MOServer;
+  private isuServer: ISUServer;
 
   /**
    * This server is used to handle incoming MT message requests
@@ -48,7 +48,7 @@ export class GSS {
 
     this.transports = options.transports;
 
-    this.moServer = new MOServer({
+    this.isuServer = new ISUServer({
       port: options.moServer.port,
       handlers: {
         initSession: this.initSession.bind( this )
@@ -103,14 +103,14 @@ export class GSS {
           confirmation.status = isu.mtMessages.length;
           
           // TODO: send a second ring alert
-          this.moServer.sendRingAlert( msg.header.imei );
+          this.isuServer.sendRingAlert( msg.header.imei );
 
         }
 
       } else {
 
         if ( ringFlag ) {
-          this.moServer.sendRingAlert( msg.header.imei );
+          this.isuServer.sendRingAlert( msg.header.imei );
         } else if ( !flushFlag ) {
           confirmation.status = -4;
         }

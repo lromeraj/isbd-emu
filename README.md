@@ -6,7 +6,7 @@ This emulator has been implemented due to the current lack of active _Iridium SB
 
 # Implementation
 
-This emulator is written in [TypeScript](https://www.typescriptlang.org/) which is a strongly typed programming language that builds on JavaScript (NodeJS environment in this case). 
+This emulator is written in [TypeScript](https://www.typescriptlang.org/) which is a strongly typed programming language that builds on JavaScript (NodeJS environment in this case).
 
 The idea of this implementation is to be flexible in order to facilitate the process of adding new functionality to the emulator. Currently there are some limitations, multiple AT commands are not currently supported and in some cases only a subset of all possible error codes are used.
 
@@ -14,7 +14,7 @@ This emulator actually consists in two different programs: `960x.js` emulator an
 
 > **NOTE**: this emulator can be run in different machines, this means that you can run the `960x.js` emulator on a different machine from where the transceiver `960x.js` is running.
 
-> **IMPORTANT**: if you use a *WAN*, remember that all the data travels over TCP or HTTP/TCP without TLS (like Iridium does).
+> **IMPORTANT**: if you use a _WAN_, remember that all the data travels over TCP or HTTP/TCP without TLS (like Iridium does).
 
 The core of the emulator is also exposed in order to be reused for more specific implementations.
 
@@ -51,7 +51,7 @@ node gss.js
 For more details, see [how to run the emulator](#running-the-emulator).
 
 # Setting up the environment
-Apart from the emulator itself, this repository also includes additional CLI tools as you'll see in the following sections, so, instead of having to specify the full path of the different scripts or making additional installation steps, you can use the `isbd-env.sh` script located in the root of this repository to load all required environment variables and bash completions. Use the following command to load the Iridium SBD environment:
+Apart from the emulator itself, this repository also includes additional _CLI_ tools as you'll see in the following sections, so, instead of having to specify the full path of the different scripts or making additional installation steps, you can use the `isbd-env.sh` script located in the root of this repository to load all required environment variables and bash completions. Use the following command to load the Iridium SBD environment:
 ``` bash
 source isbd-env.sh
 ```
@@ -71,7 +71,7 @@ $ isbd <tab><tab>
 
 > **NOTE**: autocompletion is under development and does not support all possible command line arguments. 
 
-Most of the command line samples showed in this `README` use the Iridium SBD environment.
+Most of the command line samples showed in this `README` use the Iridium SBD environment wrapper.
 
 # Running the emulator
 
@@ -109,15 +109,15 @@ isbd 960x -vvv -p /tmp/960x
 
 You should see an output like:
 ``` txt
-2023-04-21T08:49:33.415Z [ OK ]: 	AT Interface ready 
+2023-04-28T18:16:57.373Z [ OK ] @ at-interface: AT Interface ready
 ```
 Now you can communicate with it, using, for example, `minicom`:
 ``` bash
 minicom -D /tmp/tty
 ```
 
-Try to send the test `AT` command. If you want to see what you type, you have to enable echo by following one of this options:
-  1. Using `minicom` local echo, press `Ctrl+A` and then `E`. 
+Try to send the test `AT` command, if you want to see what you type, you have to enable echo by following one of this options:
+  1. Using `minicom` local echo, press `Ctrl+A` and then `E`.
   2. Using native AT Hayes echo command, type `ATE1` and then press `Enter`.
 
 Output example:
@@ -135,7 +135,6 @@ at
 OK
 ```
 
-
 Now we have to start the _GSS_ in order to allow the modem to send (_MO_) and receive (_MT_) messages.
 ``` bash
 isbd gss -vvv
@@ -143,10 +142,9 @@ isbd gss -vvv
 
 This will output something like:
 ``` bash
-2023-04-21T08:58:23.300Z [WARN]: 	No MO transports defined 
-2023-04-21T08:58:23.303Z [ OK ]: 	SU server ready, port=10801
-2023-04-21T08:58:23.303Z [ OK ]: 	MT server ready, port=10800
-2023-04-21T08:58:24.876Z [DBUG]: 	ISU 527695889002193 connected 
+2023-04-28T18:21:31.871Z [WARN] @ main: No MO transports defined 
+2023-04-28T18:21:31.877Z [ OK ] @ isu-server: ISU server ready, port=10802 
+2023-04-28T18:21:31.877Z [ OK ] @ mt-server: MT server ready, port=10800
 ```
 
 If you are still running the `960x` program the _ISU_ will connect automatically to the _GSS_ (like if a satellite was reachable).
@@ -182,7 +180,7 @@ isbd gss -vvv \
 ```
 - If you don't specify a destination address with `--mo-smtp-to`, emails will be sent to the email used for identification (to you). In other words, by default `--mo-smtp-to` equals to `--mo-smtp-user`. 
 
-- If you want to use Google's Gmail SMTP service refer to [this section](#generating-google-application-passwords-for-smtp).
+- If you want to use Gmail's SMTP service refer to [this section](#generating-google-application-passwords-for-smtp).
 
 If you want to use the _MO_ transport as _TCP_, you'll need a running instance of [Iridium Direct IP compatible server](https://glab.lromeraj.net/ucm/miot/tfm/iridium-sbd-server). The required option to enable _TCP_ transport is `--mo-tcp-host`, the port is `10801` by default. For example:
 ``` bash
@@ -233,7 +231,6 @@ If you want to manually send a simple MO message for testing purposes, here you 
 For further reference, [take a look to the Iridium 9602 SBD Transceiver Developer’s Guide](http://nearspace.ru/doc/Iridium-9602-SBD-Transceiver-Product-Developers-Guide.pdf).
 
 > **NOTE**: some AT commands are not currently supported and you'll receive an `ERROR` response code in such cases.
-
 
 # Tools
 This emulator also includes additional CLI tools which may result useful while developing applications. This tools consist in three different scripts:

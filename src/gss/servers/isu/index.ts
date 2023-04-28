@@ -10,7 +10,7 @@ import EventEmitter from "events";
 import * as logger from "../../../logger";
 import { GSS } from "../..";
 
-const log = logger.create( 'mo-server' );
+const log = logger.create( 'isu-server' );
 
 // https://stackoverflow.com/a/39145058
 // export declare interface SUServer {
@@ -23,7 +23,7 @@ const log = logger.create( 'mo-server' );
 //   ): this;
 // }
 
-export class MOServer extends EventEmitter {
+export class ISUServer extends EventEmitter {
 
   private httpServer: http.Server;
   private socketServer: sio.Server;
@@ -48,7 +48,7 @@ export class MOServer extends EventEmitter {
     this.socketServer = new sio.Server( this.httpServer );
 
     this.httpServer.listen( options.port, () => {
-      log.success( `SU server ready, port=${
+      log.success( `ISU server ready, port=${
         colors.yellow( options.port.toString() )
       }` );
     })

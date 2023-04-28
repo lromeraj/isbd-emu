@@ -41,7 +41,7 @@ async function main() {
   } else if ( !process.stdin.isTTY ) {
     inputStream = process.stdin;
   } else {
-    log.error( `Transport failed, input is empty` );
+    log.error( `Decode failed, input is empty` );
     process.exit( 1 );
   }
 
