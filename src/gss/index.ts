@@ -3,7 +3,7 @@ import { Transport } from "./transport";
 import * as fastq from "fastq";
 import type { queueAsPromised } from "fastq";
 import moment from "moment";
-import logger from "../logger";
+import * as logger from "../logger";
 import colors from "colors";
 import { MOServer } from "./servers/mo";
 import { MTServer } from "./servers/mt";
@@ -17,7 +17,9 @@ interface SubscriberUnit {
   mtMessages: Message.MT[];
   sessionsQueue: queueAsPromised<Transport.SessionMessage>;
 }
- 
+
+const log = logger.create( 'gss' );
+
 export class GSS {
 
   private autoId: number = 0;
@@ -157,7 +159,7 @@ export class GSS {
 
       if ( msgSent ) {
         
-        logger.debug( `MO #${
+        log.debug( `MO #${
           colors.green( msg.momsn.toString() )
         } sent from ISU ${ 
           colors.bold( msg.imei ) 
@@ -171,7 +173,7 @@ export class GSS {
           this.subscriberUnits[ msg.imei ].sessionsQueue.push( msg )
         }, 30000 ); // TODO: this should be incremental
         
-        logger.error( `MO #${
+        log.error( `MO #${
           colors.red( msg.momsn.toString() )
         } failed from ISU ${ 
           colors.bold( msg.imei ) 

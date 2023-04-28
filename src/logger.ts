@@ -3,9 +3,10 @@ import winston, { LeveledLogMethod, Logger } from "winston";
 
 interface CustomLogger extends Logger {
   success: LeveledLogMethod,
-  setLevel: ( lvl: number | string ) => void,
-  disableTTY: () => void
+  setLevel: ( lvl: number | string ) => CustomLogger,
 }
+
+let programName = '';
 
 const levels: {
   [key: string]: number
@@ -35,6 +36,7 @@ const ttyConsoleTransport = new winston.transports.Console({
   stderrLevels: [ 'error' ] 
 })
 
+
 const logger = winston.createLogger({
   level: 'debug',
   levels,
@@ -45,16 +47,36 @@ const logger = winston.createLogger({
     winston.format.timestamp({
       // format: 'YYYY-MM-DD HH:mm:ss'
     }),
-    winston.format.align(),
+    // winston.format.align(),
 
     winston.format.printf( info => {
   
       const {
-        timestamp, level, message, ...args
+        timestamp, moduleName, level, message, ...args
       } = info;
+      
+      let progNameFormat = '@';
 
-      return `${ timestamp } ${ levelFormat[ level ] }: ${ message } ${
-        Object.keys( args ).length ? JSON.stringify( args, null, 2 ) : ''
+      if ( programName ) {
+        progNameFormat = `${ colors.bold( programName ) }`
+      }
+
+      let moduleNameFormat = ''
+
+      if ( moduleName ) {
+        moduleNameFormat = `${ colors.magenta( moduleName ) }`
+      }
+
+      return `${ 
+        timestamp 
+      } ${ 
+        levelFormat[ level ] 
+      } ${ 
+        progNameFormat 
+      } ${ 
+        moduleNameFormat 
+      }: ${ message } ${
+          Object.keys( args ).length ? JSON.stringify( args, null, 2 ) : ''
       }`;
     
     })  
@@ -69,11 +91,12 @@ const logger = winston.createLogger({
 }) as CustomLogger;
 
 
-logger.disableTTY = () => {
+export function disableTTY() {
   logger.remove( ttyConsoleTransport ).add( consoleTransport );
+  return logger;
 }
 
-logger.setLevel = ( targetLevel: number | string ) => {
+export function setLevel( targetLevel: number | string ) {
   
   let level = 'debug';
   
@@ -88,7 +111,19 @@ logger.setLevel = ( targetLevel: number | string ) => {
     }
   }
 
-  logger.level = level
+  logger.level = level;
+  
+  return logger;
 }
+
+export function create( moduleName?: string ) {
+  return logger.child({
+    moduleName
+  }) as CustomLogger;
+};
+
+export function setProgramName( name: string ) {
+  programName = name;
+};
 
 export default logger;

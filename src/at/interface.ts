@@ -1,4 +1,4 @@
-import logger from "../logger"
+import * as logger from "../logger"
 import colors, { underline } from "colors";
 import { SerialPort } from "serialport";
 import { ATCmd } from "./cmd";
@@ -16,6 +16,8 @@ enum ATIStatus {
   WAITING,
   PROCESSING,
 };
+
+const log = logger.create( 'at-interface' );
 
 export class ATInterface {
 
@@ -51,9 +53,9 @@ export class ATInterface {
       autoOpen: typeof serialPortOpts.path === 'string',
     }, err => {
       if ( err ) {
-        logger.error( err.message )
+        log.error( err.message )
       } else {
-        logger.success( `AT Interface ready` );
+        log.success( `AT Interface ready` );
       }
     });
 
@@ -163,7 +165,7 @@ export class ATInterface {
 
       if ( promise ) {
         
-        logger.debug( `Processing command: [${
+        log.debug( `Processing command: [${
           colors.bold.cyan( cmd.fqn.toUpperCase() )
         }] ${
           colors.blue( this.escapeLine( atCmdStr ) )
@@ -182,7 +184,7 @@ export class ATInterface {
         }).catch( err => {
 
           // TODO: write AT error response ????
-          logger.error( `Internal command error => ${ err.stack }` )
+          log.error( `Internal command error => ${ err.stack }` )
 
         }).finally(() => {
           this.writeEnqueuedLines();
@@ -195,7 +197,7 @@ export class ATInterface {
 
     }
 
-    logger.error( `Unknown command: ${
+    log.error( `Unknown command: ${
       colors.red( this.escapeLine( atCmdStr ) )
     }` )
 
@@ -263,7 +265,7 @@ export class ATInterface {
 
   writeLine( line: string ) {
 
-    logger.debug( `Writing line: ${ 
+    log.debug( `Writing line: ${ 
       colors.blue( this.escapeLine( line ) ) 
     }` )
 

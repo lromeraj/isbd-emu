@@ -2,21 +2,24 @@
 
 import fs from "fs-extra";
 import colors from "colors";
-import logger from "../logger"
+import  * as logger from "../logger"
 import { Argument, Command, Option, program } from "commander";
-import { Message } from "../gss/msg";
+import { Message, msgToJSON } from "../gss/msg";
 import { TCPTransport } from "../gss/transport/tcp";
 import { decodeMoMessage, decodeMtMessage } from "../gss/msg/decoder";
 import { encodeMoMsg, encodeMtMessage } from "../gss/msg/encoder";
 import { Readable, Stream } from "stream";
 import { ReadStream } from "fs";
+import { collectInputStream } from "./utils";
+
+const log = logger.create( 'main' );
 
 program
-  .version( '0.0.3' )
+  .version( '0.0.2' )
   .description( 'Iridium SBD message transporter' )
 
 program.addArgument( 
-  new Argument( '[file]', 'JSON message file' ) );
+  new Argument( '[file]', 'SBD binary message file' ) );
 
 program.addOption(
   new Option( '--tcp-host <string>', 'TCP transport host' )
@@ -26,99 +29,116 @@ program.addOption(
   new Option( '--tcp-port <number>', 'TCP transport port' )
     .default( 10800 ).argParser( v => parseInt( v ) ) )
 
+function writeMtConfirmation( mtConfirm: Message.MT.Confirmation, buffer: Buffer ) {
 
-function sendMtMessage( transport: TCPTransport, reqBuff: Buffer ) {
+  if ( process.stdout.isTTY ) {
+        
+    const outFileName = `MTC_${ 
+      mtConfirm.imei
+    }_${ 
+      mtConfirm.autoid 
+    }.sbd`
 
-  logger.info( `Sending MT message ...` );
+    fs.writeFile( outFileName, buffer ).then( () => {
 
-  return transport.sendBuffer( reqBuff, { 
+      log.success( `MT confirmation message written to ${ 
+        colors.green( outFileName ) 
+      }` );
+
+    }).catch( err => {
+      log.error( `Could not write MT confirmation message => ${ err.message }`)
+    })
+
+  } else {
+    log.success( `MT confirmation received` );
+    process.stdout.write( buffer );
+  }
+
+}
+
+function processMtMessage( transport: TCPTransport, mtReqBuff: Buffer ) {
+
+  log.info( `Sending MT message ...` );
+
+  return transport.sendBuffer( mtReqBuff, {
     waitResponse: true
-  }).then( respBuf => {
+  }).then( mtRespBuff => {
 
-    const mtMsg = decodeMtMessage( respBuf );
+    const mtMsg = decodeMtMessage( mtRespBuff );
 
     if ( mtMsg && mtMsg.confirmation ) {
-
-      const outFileName = `MTC_${ 
-        mtMsg.confirmation.imei 
-      }_${ 
-        mtMsg.confirmation.autoid 
-      }.sbd`
-      
-      return fs.writeFile( outFileName, respBuf ).then( () => {
-
-        logger.info( `MT confirmation message written into ${ 
-          colors.green( outFileName ) 
-        }` );
-
-      }).catch( err => {
-        logger.error( `Could not write MT confirmation message => ${ err.message }`)
-      })
-
+      writeMtConfirmation( mtMsg.confirmation, mtRespBuff );
     } else {
-      logger.error( `Could not decode MT confirmation message` );
+      log.error( `Could not decode MT confirmation message` );
     }
 
   }).catch( err => {
-    logger.error( `Could not send message => ${ err.message }` );
+    log.error( `Could not send message => ${ err.message }` );
   })
 
 }
 
-async function main() {
-  program.parse();
+function processMoMessage( transport: TCPTransport, reqBuff: Buffer ) {
 
+  log.info( `Sending MO message ...` );
+
+  return transport.sendBuffer( reqBuff ).then(() => {
+    log.info( `MO message sent` );
+  }).catch( err => {
+    log.error( `Could not send MO message => ${ err.message }` );
+  })
+
+}
+
+
+async function main() {
+  
+  program.parse();
+  
   const programArgs = program.args;
   const opts = program.opts();
 
-  const [ srcFilePath ] = programArgs;
+  logger.setProgramName( 'transport' );
+  
+  if ( !process.stdout.isTTY ) {
+    
+    logger.disableTTY();
+  }
   
   let inputStream: Readable;
+  const [ srcFilePath ] = programArgs;
 
   if ( srcFilePath ) {
     inputStream = fs.createReadStream( srcFilePath );
   } else if ( !process.stdin.isTTY ) {
     inputStream = process.stdin;
   } else {
-    logger.error( `No input was given` );
+    log.error( `Transport failed, input is empty` );
     process.exit( 1 );
   }
 
-  const transport = new TCPTransport({
-    host: opts.tcpHost,
-    port: opts.tcpPort,
-  })
+  collectInputStream( inputStream ).then( buffer => {
 
-  const chunks: Buffer[] = [];
+    const transport = new TCPTransport({
+      host: opts.tcpHost,
+      port: opts.tcpPort,
+    })
 
-  inputStream.on( 'error', err => {
-    logger.error( `Read error => ${ err.message }` );
-  })
+    let decodedMsg: Message | null = null
 
-  inputStream.on( 'data', chunk =>  {
-    chunks.push( chunk );
-  })
-
-  inputStream.on( 'end', () => {
-
-    const buffer = Buffer.concat( chunks );
-    const decoders = [ decodeMoMessage, decodeMtMessage ];
-
-    for ( let decoder of decoders ) {
-      
-      const message = decoder( buffer );
-
-      if ( decoder( buffer ) ) {
-        if ( decoder === decodeMtMessage ) {
-          sendMtMessage( transport, buffer );
-        }
-        break;
-      }
-
+    if ( ( decodedMsg = decodeMtMessage( buffer ) ) ) {
+      // const mtMsg = decodedMsg as Message.MT;
+      processMtMessage( transport, buffer );
+    } else if ( ( decodedMsg = decodeMoMessage( buffer ) )) {
+      // const moMsg = decodedMsg as Message.MO;
+      processMoMessage( transport, buffer );
+    } else {
+      log.error( `Could not recognize message type` );
     }
 
+  }).catch( err => {
+    log.error( `Read error => ${ err.message }` );
   })
-
   
 }
 

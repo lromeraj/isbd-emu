@@ -1,5 +1,4 @@
-import logger from "../logger";
-import nodemailer from "nodemailer";
+import * as logger from "../logger";
 import { ATInterface } from "../at/interface";
 import { 
   CMD_CGSN, 
@@ -44,6 +43,8 @@ interface CIEV {
   svca: number;
   sigq: number;
 };
+
+const log = logger.create( '960x' );
 
 // TODO: create a parent class named Modem and rename this to SBDModem
 export class Modem {
@@ -145,7 +146,7 @@ export class Modem {
         svca: 1,
         sigq: 5,
       })
-      logger.debug( `GSS reached` );
+      log.debug( `GSS reached` );
     })
 
     this.socket.on( 'disconnect', () => {
@@ -155,7 +156,7 @@ export class Modem {
         sigq: 0,
       });
 
-      logger.debug( `GSS lost` );
+      log.debug( `GSS lost` );
     })
 
     this.socket.on( 'ring', () => {

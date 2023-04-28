@@ -7,9 +7,10 @@ import sio from "socket.io";
 import colors from "colors";
 import net from "net";
 import EventEmitter from "events";
-import logger from "../../../logger";
+import * as logger from "../../../logger";
 import { GSS } from "../..";
 
+const log = logger.create( 'mo-server' );
 
 // https://stackoverflow.com/a/39145058
 // export declare interface SUServer {
@@ -47,7 +48,7 @@ export class MOServer extends EventEmitter {
     this.socketServer = new sio.Server( this.httpServer );
 
     this.httpServer.listen( options.port, () => {
-      logger.success( `SU server ready, port=${
+      log.success( `SU server ready, port=${
         colors.yellow( options.port.toString() )
       }` );
     })
@@ -66,16 +67,16 @@ export class MOServer extends EventEmitter {
         ) => {
           this.handlers.initSession( sessionReq ).then( callback )
             .catch( err => {
-              logger.error( `Init session failed => ${ err.stack }` );
+              log.error( `Init session failed => ${ err.stack }` );
           })
         })
         
         socket.on( 'disconnect', () => {
           delete this.sockets[ imei ];
-          logger.debug( `ISU ${ colors.bold( imei ) } disconnected` );
+          log.debug( `ISU ${ colors.bold( imei ) } disconnected` );
         })
 
-        logger.debug( `ISU ${ colors.bold( imei ) } connected` );
+        log.debug( `ISU ${ colors.bold( imei ) } connected` );
 
       } else {
         socket.disconnect();
@@ -89,7 +90,7 @@ export class MOServer extends EventEmitter {
 
     const socket = this.sockets[ imei ];
     
-    logger.debug( `Sending ring alert to ${ imei }` );
+    log.debug( `Sending ring alert to ${ imei }` );
     
     if ( socket ) {
       socket.emit( 'ring' );

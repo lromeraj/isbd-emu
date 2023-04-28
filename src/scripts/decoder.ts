@@ -2,17 +2,21 @@
 
 import fs from "fs-extra";
 import colors from "colors";
-import logger from "../logger"
+import * as logger from "../logger"
 import { Argument, Command, Option, program } from "commander";
 import { decodeMoMessage, decodeMtMessage } from "../gss/msg/decoder";
 import { Message, msgToJSON } from "../gss/msg";
+import { Readable } from "stream";
+import { collectInputStream } from "./utils";
+
+const log = logger.create( 'main' );
 
 program
   .version( '0.0.3' )
   .description( 'Message decoder for Iridium SBD' )
 
 program.addArgument( 
-  new Argument( '[file]', 'SBD message file path' ).argRequired() )
+  new Argument( '[file]', 'SBD message file path' ) )
 
 program.addOption( 
   new Option( '--pretty', 'Output will be more human readable' ) )
@@ -22,27 +26,36 @@ async function main() {
   program.parse();
   const opts = program.opts();
 
-  const [ filePath ] = program.args;
+  logger.setProgramName( 'decoder' );
+
+  const [ srcFilePath ] = program.args;
 
   if ( !process.stdout.isTTY ) {
     logger.disableTTY();
   }
+  
+  let inputStream: Readable;
+  
+  if ( srcFilePath ) {
+    inputStream = fs.createReadStream( srcFilePath );
+  } else if ( !process.stdin.isTTY ) {
+    inputStream = process.stdin;
+  } else {
+    log.error( `Transport failed, input is empty` );
+    process.exit( 1 );
+  }
 
-  if ( fs.pathExistsSync( filePath ) ) {
-    
-    logger.debug( `Reading ${colors.yellow( filePath )} ...`)
-    
-    const fileData = fs.readFileSync( filePath );
-    
+  collectInputStream( inputStream ).then( buffer => {
+
     const decoders = [
-      decodeMoMessage, 
+      decodeMoMessage,
       decodeMtMessage
     ];
 
     let message: Message | null = null;
 
     for ( let decoder of decoders ) {
-      message = decoder( fileData );
+      message = decoder( buffer );
       if ( message ) {
         process.stdout.write(
           msgToJSON( message, opts.pretty ) + '\n' );
@@ -51,16 +64,14 @@ async function main() {
     }
 
     if ( message ) {
-      logger.success( 'Message decoded' );
+      log.success( 'Message decoded' );
     } else {
-      logger.error( 'Decode failed, invalid binary format' );
+      log.error( 'Decode failed, invalid binary format' );
     }
-  
-  } else {
-    logger.error( `File ${
-      colors.yellow( filePath )
-    } does not exist` );
-  }
+
+  }).catch( err => {
+    log.error( `Read error => ${ err.message }` );
+  })  
 
 }
 
