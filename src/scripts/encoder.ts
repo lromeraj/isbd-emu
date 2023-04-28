@@ -91,6 +91,8 @@ async function main() {
       log.error( `Invalid JSON, could not recognize message type` );
     }
 
+  }).catch( err => {
+    log.error( `Read error => ${ err.message }` );
   })
 
 }

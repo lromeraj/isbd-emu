@@ -133,7 +133,7 @@ async function main() {
       // const moMsg = decodedMsg as Message.MO;
       processMoMessage( transport, buffer );
     } else {
-      log.error( `Could not recognize message type` );
+      log.error( `Input message not recognized` );
     }
 
   }).catch( err => {

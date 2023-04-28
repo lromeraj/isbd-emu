@@ -64,7 +64,7 @@ async function main() {
     }
 
     if ( message ) {
-      log.success( 'Message decoded' );
+      log.success( 'Message successfully decoded' );
     } else {
       log.error( 'Decode failed, invalid binary format' );
     }
