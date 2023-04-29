@@ -208,7 +208,7 @@ If the port is not specified, the default value `25` will be used, Gmail's _SMTP
 
 ## MO message sample
 
-If you want to manually send a simple MO message for testing purposes, here you have an example on how to do that.
+If you want to manually send a simple _MO_ message for testing purposes, here you have an example on how to do that:
 1. First make sure you have `socat`, `960x` and `gss` programs currently running.
 2. Open serial monitor using `minicom`:
     ``` bash
@@ -233,7 +233,7 @@ For further reference, [take a look to the Iridium 9602 SBD Transceiver Develope
 > **NOTE**: some AT commands are not currently supported and you'll receive an `ERROR` response code in such cases.
 
 # Tools
-This emulator also includes additional CLI tools which may result useful while developing applications. This tools consist in three different scripts:
+This emulator also includes additional _CLI_ tools which may result useful while developing applications. This tools consist in three different scripts:
   - [Encoder](#encoder-script) script which allows to encode Iridium Direct IP messages.
   - [Decoder](#decoder-script) script which allows to decode Iridium Direct IP messages.
   - [Transport](#transport-script) script which allows to send Iridium Direct IP messages.
@@ -263,7 +263,7 @@ This script expects an input formatted in JSON, depending on the attributes of t
 
 ### Encoding MT messages
 
-If you want to encode a _MT_ message you'll have to specify at least the header and the payload:
+If you want to encode a _MT_ message with payload you'll have to specify at least the header and the payload:
 ``` json 
 {
   "header": {
@@ -273,6 +273,22 @@ If you want to encode a _MT_ message you'll have to specify at least the header 
   },
   "payload": {
     "payload": "Example message"
+  }
+}
+```
+
+Also, the payload can be defined using an array for arbitrary binary data, the array must contain bytes in decimal format, because JSON does not support hexadecimal format:
+``` json 
+{
+  "header": {
+    "imei": "527695889002193",
+    "ucmid": [0,0,0,0],
+    "flags": 0
+  },
+  "payload": {
+    "payload": [ 
+      69, 120, 97, 109, 112, 108, 101, 32, 109, 101, 115, 115, 97, 103, 101 
+    ]
   }
 }
 ```
@@ -289,12 +305,11 @@ Of course, you can specify only the header if you want to play with the flags at
   }
 }
 ```
-This message will flush the MT message queue in the GSS.
+This message will flush the _MT_ message queue in the GSS.
 
 > **NOTE**: Iridium SBD supports multiple flags, but this emulator supports (by the moment) only two flags: `1` and `2`.  
->   - `1` - Flush MT queue  
->   - `2` - Send ring alert  
-
+>   - `1` - Flush MT queue
+>   - `2` - Send ring alert
 
 ## Decoder script
 You can invoke to de decoder using the following command:
@@ -304,7 +319,6 @@ isbd decoder --help
 
 ## Transport script
 
-___
 
 
 # General GSS behavior
