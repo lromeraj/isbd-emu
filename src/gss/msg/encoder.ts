@@ -42,7 +42,7 @@ function encodeMoHeader( msg: Message.MO.Header ): Buffer {
   offset = buffer.writeUint16BE( msg.momsn, offset );
   offset = buffer.writeUint16BE( msg.mtmsn, offset );
   offset = buffer.writeUint32BE( msg.time.unix(), offset );
-
+  
   return buffer;
 }
 

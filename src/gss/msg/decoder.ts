@@ -48,7 +48,7 @@ function decodeMoHeader( msg: Message.MO, data: Buffer, offset: number ): number
     status: data.readUint8( offset + 22 ),
     momsn: data.readUInt16BE( offset + 23 ),
     mtmsn: data.readUint16BE( offset + 25 ),
-    time: moment.unix( data.readUint32BE( offset + 28 ) ),
+    time: moment.unix( data.readUint32BE( offset + 27 ) ),
   };
 
   msg.header = header;

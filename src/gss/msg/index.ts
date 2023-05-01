@@ -1,4 +1,4 @@
-import { Moment } from "moment";
+import moment, { Moment } from "moment";
 
 export const MSG_REV    = 0x01
 export const MSG_H_LEN  = 3;
@@ -191,6 +191,8 @@ function toJSONObject( object: { [key: string]: any } ) {
       object[ key ] = [ ... val ];
     } else if ( typeof val === 'string' && key === 'payload' ) {
       object[ key ] = [ ... Buffer.from( val ) ];
+    } else if ( moment.isMoment( val ) ) {
+      object[ key ] = val.unix();
     } else if ( typeof val === 'object' ) {
       toJSONObject( val );
     }
@@ -222,8 +224,9 @@ function fromJSONObject(
     
     if ( val instanceof Array 
       || ( typeof val === 'string' && key === 'payload' ) ) {
-      
       object[ key ] = Buffer.from( val );
+    } else if ( typeof val === 'number' && key === 'time' ) {
+      object[ key ] = moment.unix( val );
     } else if ( typeof val === 'object' ) {
       fromJSONObject( val );
     }

@@ -56,6 +56,42 @@ function processMtMessage( mtMsg: Message.MT ) {
 
 }
 
+
+function processMoMessage( moMsg: Message.MO ) {
+  
+  const encodedBuffer = encodeMoMsg( moMsg );
+
+  if ( process.stdout.isTTY ) {
+
+    let outFileName = 'MO.sbd';
+
+    if ( moMsg.header ) {
+      outFileName = `MO_${ 
+        moMsg.header.imei 
+      }_${ 
+        moMsg.header.momsn.toString().padStart( 6, '0' )
+      }.sbd`
+    }
+
+    return fs.writeFile( outFileName, encodedBuffer ).then( () => {
+      
+      log.success( `MO message written to ${ 
+        colors.green( outFileName ) 
+      }` );
+
+    }).catch( err => {
+      log.error( `Could not write MO message ${ 
+        colors.red( outFileName ) 
+      } => ${ err.message }` );
+    })
+
+  } else {
+    process.stdout.write( encodedBuffer );
+    log.success( `MO message encoded` );
+  }
+
+}
+
 async function main() {
 
   program.parse();
@@ -85,8 +121,7 @@ async function main() {
     if ( isMT( msgObj ) ) {
       processMtMessage( msgObj as Message.MT );
     } else if ( isMO( msgObj ) ) {
-      const moMsg = msgObj as Message.MO;
-      log.warn( `Can't encode MO messages by the moment` );
+      processMoMessage( msgObj as Message.MO );
     } else {
       log.error( `Invalid JSON, could not recognize message type` );
     }
