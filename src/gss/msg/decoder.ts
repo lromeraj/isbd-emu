@@ -48,7 +48,7 @@ function decodeMoHeader( msg: Message.MO, data: Buffer, offset: number ): number
     status: data.readUint8( offset + 22 ),
     momsn: data.readUInt16BE( offset + 23 ),
     mtmsn: data.readUint16BE( offset + 25 ),
-    time: moment.unix( data.readUint32BE( offset + 28 ) ),
+    time: moment.unix( data.readUint32BE( offset + 27 ) ),
   };
 
   msg.header = header;
@@ -185,8 +185,8 @@ function decodeMtConfirmation(
     ucmid: buffer.subarray( offset + 3, offset + 7 ),
     imei: buffer.subarray( offset + 7, offset + 22 ).toString( 'ascii' ),
     autoid: buffer.readUint32BE( offset + 22 ),
-    status: buffer.readUint16BE( offset + 26 ),
-  } 
+    status: buffer.readInt16BE( offset + 26 ),
+  }
   
   msg.confirmation = confirmation;
 

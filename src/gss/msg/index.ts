@@ -1,4 +1,4 @@
-import { Moment } from "moment";
+import moment, { Moment } from "moment";
 
 export const MSG_REV    = 0x01
 export const MSG_H_LEN  = 3;
@@ -119,12 +119,13 @@ export namespace Message {
        */
       imei: string;
 
-      flags: number;
+      flags?: number;
     }
 
     export namespace Header {
 
       export enum Flag {
+        NONE              = 0x0000,
         FLUSH_MT_QUEUE    = 0x0001,
         SEND_RING_ALERT   = 0x0002, 
       }
@@ -136,12 +137,105 @@ export namespace Message {
     }
 
     export interface Confirmation extends IE {
+
+      /**
+       * Unique Client Message ID
+       */
       ucmid: Buffer;
+
+      /**
+       * International Mobile Equipment Identity
+       */
       imei: string;
+      
       autoid: number;
       status: number;
     }
 
   }
 
+}
+
+
+export function isMO( object: { [key: string]: any } ): boolean {
+  if ( object.header ) {
+    if ( object.header.cdr !== undefined ) {
+      return true;
+    }
+  }
+  return false;
+}
+
+export function isMT( object: { [key: string]: any } ): boolean {
+  if ( object.header ) {
+    if ( object.header.ucmid !== undefined ) {
+      return true;
+    }
+  } else if ( object.confirmation ) {
+
+    if ( object.confirmation.ucmid !== undefined 
+        && object.confirmation.autoid !== undefined ) {
+      return true;
+    }
+  }
+  return false;
+} 
+
+
+function toJSONObject( object: { [key: string]: any } ) {
+  for ( let key in object ) {
+
+    const val = object[ key ];
+
+    if ( val instanceof Buffer ) {
+      object[ key ] = [ ... val ];
+    } else if ( typeof val === 'string' && key === 'payload' ) {
+      object[ key ] = [ ... Buffer.from( val ) ];
+    } else if ( moment.isMoment( val ) ) {
+      object[ key ] = val.unix();
+    } else if ( typeof val === 'object' ) {
+      toJSONObject( val );
+    }
+  }
+}
+
+export function msgToJSON( object: { 
+  [key: string]: any 
+}, pretty: boolean = false): string {
+
+  const objCopy = { ...object };
+
+  toJSONObject( objCopy );
+
+  if ( pretty ) {
+    return JSON.stringify( objCopy, null, '\t' );
+  } else {
+    return JSON.stringify( objCopy );
+  }
+}
+
+function fromJSONObject( 
+  object: { [key: string]: any } 
+) {
+
+  for ( let key in object ) {
+
+    const val = object[ key ];
+    
+    if ( val instanceof Array 
+      || ( typeof val === 'string' && key === 'payload' ) ) {
+      object[ key ] = Buffer.from( val );
+    } else if ( typeof val === 'number' && key === 'time' ) {
+      object[ key ] = moment.unix( val );
+    } else if ( typeof val === 'object' ) {
+      fromJSONObject( val );
+    }
+
+  }
+}
+
+export function msgFromJSON( jsonStr: string ) {
+  const obj = JSON.parse( jsonStr );
+  fromJSONObject( obj );
+  return obj;
 }

@@ -1,5 +1,5 @@
 import colors from "colors";
-import logger from "../logger";
+import * as logger from "../logger";
 import { Argument, Command, Option, program } from "commander";
 import { Modem } from "../isu/960x";
 
@@ -29,6 +29,8 @@ program.addOption(
   new Option( '--gss-uri <string>', 'GSS Socket URI' )
   .conflicts([ 'gssPort', 'gssHost' ]) )
 
+const log = logger.create( 'main' );
+
 async function main() {
 
   program.parse();
@@ -37,7 +39,7 @@ async function main() {
   logger.setLevel( opts.verbose );
 
   if ( !/[0-9]{15}/.test( opts.imei ) ) {
-    logger.error( `Given IMEI is not valid` );
+    log.error( `Given IMEI is not valid` );
     process.exit( 1 );
   }
 

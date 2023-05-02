@@ -15,25 +15,30 @@ export class TCPTransport extends Transport {
     this.options = options;
   }
 
-  sendMessage<T>( 
-    msg: T, 
-    encoder: ( msg: T ) => Buffer 
-  ): Promise<T> {
-
+  async sendBuffer( buffer: Buffer, _opts?: { 
+    waitResponse: boolean
+  }): Promise<Buffer> {
+    
+    const opts = {
+      waitResponse: _opts?.waitResponse || false
+    }
+    
     return new Promise(( resolve, reject ) => {
+      
+      const respChunks: Buffer[] = [];
 
       const client = new net.Socket().connect({
         host: this.options.host,
         port: this.options.port,
       }, () => {
-        client.write( encoder( msg ), err => {
-          
-          if ( err ){
+        client.write( buffer, err => {
+          if ( err ) {
             rejectSending( err );
           } else {
-            resolveSending();
+            if ( !opts.waitResponse ) {
+              resolveSending( Buffer.alloc( 0 ) );
+            }
           }
-
         });
       })
 
@@ -42,30 +47,47 @@ export class TCPTransport extends Transport {
         reject( err );
       }
 
-      const resolveSending = () => {
+      const resolveSending = ( response: Buffer ) => {
         client.end();
-        resolve( msg );
+        resolve( response );
       }
 
       client.setTimeout( this.SOCKET_TIMEOUT );
+      
+      client.on( 'data', data => {
+        respChunks.push( data );
+      })
+
+      client.on( 'close', () => {
+        resolveSending( Buffer.concat( respChunks ) );
+      })
 
       client.on( 'timeout', () => {
         rejectSending( new Error( 'Socket timeout' ) );
       })
 
-      client.on( 'error', err => {
-        rejectSending( err );
-      });
+      client.on( 'error', rejectSending );
 
-    }) 
+    })
 
+  }
+
+  // TODO: split this function
+  sendMessage<T>( 
+    msg: T, 
+    encoder: ( msg: T ) => Buffer,
+    _opts?: { 
+      waitResponse: boolean
+    }
+  ): Promise<Buffer> {
+    return this.sendBuffer( encoder( msg ), _opts );
   }
 
   sendSessionMessage( 
     sessionMsg: Transport.SessionMessage
   ): Promise<Transport.SessionMessage> {
     return this.sendMessage( sessionMsg, 
-      this.encodeSessionMessage.bind( this ) );
+      this.encodeSessionMessage.bind( this ) ).then( () => sessionMsg );
   }
 
   private encodeSessionMessage( msg: Transport.SessionMessage ): Buffer {

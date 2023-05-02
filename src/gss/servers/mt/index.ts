@@ -1,22 +1,32 @@
-import net from "net";
+import net, { Socket } from "net";
 import colors from "colors";
 import { EventEmitter } from "events";
 
-import logger from "../../../logger";
+import * as logger from "../../../logger";
 import fastq, { queueAsPromised } from "fastq";
 import { TCPTransport } from "../../transport/tcp";
 import { decodeMtMessage } from "../../msg/decoder";
+import { Message } from "../../msg";
+import { encodeMtMessage } from "../../msg/encoder";
+
+const log = logger.create( 'mt-server' );
 
 export class MTServer extends EventEmitter {
 
   private tcpServer: net.Server;
-  private transport?: TCPTransport;
-  private mtMsgQueue: queueAsPromised<Buffer[]>;
+  private handlers: MTServer.Handlers;
+
+  private mtMsgQueue: queueAsPromised<Buffer[], Message.MT>;
 
   constructor( options: MTServer.Options ) {
 
     super();
-    this.transport = options.transport;
+
+    this.handlers = {
+      mtMsg: () => Promise.reject( new Error('Not implemented') )
+    }
+
+    Object.assign( this.handlers, options.handlers );
 
     this.mtMsgQueue = fastq.promise(
       this.mtMsgWorker.bind( this ), 1 );
@@ -24,7 +34,7 @@ export class MTServer extends EventEmitter {
     this.tcpServer = net.createServer();
 
     this.tcpServer.listen( options.port, () => {
-      logger.success( `MT server ready, port=${
+      log.success( `MT server ready, port=${
         colors.yellow( options.port.toString() )
       }` );
     })
@@ -34,41 +44,37 @@ export class MTServer extends EventEmitter {
 
   }
 
-  private async mtMsgWorker( mtBuffers: Buffer[] ) {
+  private async mtMsgWorker( buffers: Buffer[] ) {
 
-    const buffer = Buffer.concat( mtBuffers );
-    logger.debug( `Decoding incoming MT message size=${ 
+    const buffer = Buffer.concat( buffers );
+
+    log.debug( `Decoding incoming MT message size=${
       colors.yellow( buffer.length.toString() ) 
     }` );
 
     const mtMsg = decodeMtMessage( buffer );
     
     if ( mtMsg ) {
-      if ( this.transport ) {
-        console.log( mtMsg )
-        // TODO: this.transport.sendMessage( mtMsg, encodeM.bind( this ) );
-      } else {
-        logger.error( `Could not send MT confirmation, TCP transport is not defined` );
-      }
+      return this.handlers.mtMsg( mtMsg );
     } else {
-      logger.error( `Could not decode MT message` );
+      throw new Error( `Could not decode MT message` );
     }
 
   }
 
   private async socketHandler( socket: net.Socket ) { 
-    
-    const MAX_MSG_LEN = 512; // absolute limit
-    const SOCKET_TIMEOUT = 5000; // milliseconds
-    const PROTO_HEADER_LEN = 3;
 
+    const MAX_MSG_LEN = 1024; // maximum message length
+    const SOCKET_TIMEOUT = 8000; // milliseconds
+    const PROTO_HEADER_LEN = 3; // protocol header length
+    
     let bytesRead = 0;
     let bytesToRead = MAX_MSG_LEN; // this works as a maximum limit too
     let buffersRead: Buffer[] = []
     let headerBuffer: Buffer | null = null;
 
     socket.setTimeout( SOCKET_TIMEOUT );
-
+    
     socket.on( 'timeout', () => {
       socket.destroy();
     })
@@ -84,7 +90,7 @@ export class MTServer extends EventEmitter {
         headerBuffer = buffersRead.length > 1
           ? Buffer.concat( buffersRead )
           : buffersRead[ 0 ]
-
+        
         buffersRead = [ headerBuffer ]
 
         const protoRev = headerBuffer.readUint8( 0 );
@@ -103,9 +109,20 @@ export class MTServer extends EventEmitter {
 
       }
 
+      const sendConfirmation = ( mtConfirm: Message.MT ) => {
+        socket.write( encodeMtMessage( mtConfirm ), err => {
+          socket.end();
+        });
+      }
+
       if ( bytesRead === bytesToRead ) {
-        socket.end();
-        this.mtMsgQueue.push( buffersRead )
+
+        this.mtMsgQueue.push( buffersRead ).then( sendConfirmation )
+          .catch( err => {
+            socket.destroy();
+            log.error( `Error processing MT message => ${ err.message }` );
+        })
+
       } else if ( bytesRead > bytesToRead ) {
         socket.destroy();
       }
@@ -118,8 +135,14 @@ export class MTServer extends EventEmitter {
 
 export namespace MTServer {
 
+  export interface Handlers {
+    mtMsg: Handler;
+  };
+
+  export type Handler = ( msg: Message.MT ) => Promise<Message.MT>;
+
   export interface Options {
     port: number;
-    transport?: TCPTransport;
+    handlers?: Handlers;
   }
 }

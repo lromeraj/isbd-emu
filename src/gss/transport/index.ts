@@ -1,5 +1,4 @@
 import moment, { Moment } from "moment";
-
 import type { GSS } from "../index";
 
 export abstract class Transport {
@@ -7,7 +6,9 @@ export abstract class Transport {
   abstract sendSessionMessage(
     msg: Transport.SessionMessage 
   ): Promise<Transport.SessionMessage>;
-  
+
+  abstract sendBuffer( buffer: Buffer ): Promise<Buffer>;
+
 }
 
 export namespace Transport {
@@ -23,3 +24,5 @@ export namespace Transport {
   }
 
 }
+
+// TODO: create FILE transport

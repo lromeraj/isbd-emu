@@ -1,12 +1,12 @@
 import colors from "colors";
-import logger from "../logger";
-import { SerialPort } from "serialport"
+import * as logger from "../logger";
 import { Argument, Command, Option, program } from "commander";
-import { Modem } from "../isu/960x";
 import { Transport } from "../gss/transport";
 import { SMTPTransport } from "../gss/transport/smtp";
 import { TCPTransport } from "../gss/transport/tcp";
 import { GSS } from "../gss";
+
+const log = logger.create( 'main' );
 
 program
   .version( '0.0.2' )
@@ -82,7 +82,7 @@ async function main() {
   }
 
   if ( transports.length === 0 ) {
-    logger.warn( `No MO transports defined` );
+    log.warn( `No MO transports defined` );
   }
 
   const gss = new GSS({ // gss instance
@@ -91,10 +91,12 @@ async function main() {
       port: opts.mtServerPort,
       transport: tcpTransport,
     },
-    suServer: {
+    moServer: {
       port: opts.moServerPort
     },
   })
+
+  // console.log( fs.readFileSync( path.join( __dirname, '../../ascii/gss.txt' ), 'ascii' ) )
 
 }
 

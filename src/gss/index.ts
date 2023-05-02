@@ -3,30 +3,36 @@ import { Transport } from "./transport";
 import * as fastq from "fastq";
 import type { queueAsPromised } from "fastq";
 import moment from "moment";
-import logger from "../logger";
+import * as logger from "../logger";
 import colors from "colors";
-import { MOServer } from "./servers/mo";
+import { ISUServer } from "./servers/isu";
 import { MTServer } from "./servers/mt";
 import { TCPTransport } from "./transport/tcp";
+import { IE_MO_CONFIRMATION_LEN, Message } from "./msg";
 
 interface SubscriberUnit {
   momsn: number;
   mtmsn: number;
   location: GSS.UnitLocation;
-  sessionMsgQueue: queueAsPromised<Transport.SessionMessage>;
+  mtMessages: Message.MT[];
+  sessionsQueue: queueAsPromised<Transport.SessionMessage>;
 }
- 
+
+const log = logger.create( 'gss' );
+
 export class GSS {
+
+  private autoId: number = 0;
 
   private subscriberUnits: { 
     [key: string]: SubscriberUnit
   } = {};
   
   /**
-   * This server is to allow emulated ISUs to coomunicate
+   * This server is to allow emulated ISUs to communicate
    * with the GSS
    */
-  private suServer: MOServer;
+  private isuServer: ISUServer;
 
   /**
    * This server is used to handle incoming MT message requests
@@ -42,8 +48,8 @@ export class GSS {
 
     this.transports = options.transports;
 
-    this.suServer = new MOServer({
-      port: options.suServer.port,
+    this.isuServer = new ISUServer({
+      port: options.moServer.port,
       handlers: {
         initSession: this.initSession.bind( this )
       }
@@ -51,15 +57,93 @@ export class GSS {
 
     this.mtServer = new MTServer({
       port: options.mtServer.port,
-      transport: options.mtServer.transport,
+      handlers: {
+        mtMsg: this.mtMsgHandler.bind( this ),
+      }
     });
+
+  }
+
+  private getAutoId(): number {
+    return this.autoId++;
+  }
+
+  private async mtMsgHandler( msg: Message.MT ): Promise<Message.MT> {
+    
+    const flag = Message.MT.Header.Flag;
+  
+    if ( msg.header ) {
+      
+      const isu = this.getISU( msg.header.imei );
+
+      const confirmation: Message.MT.Confirmation = {
+        autoid: this.getAutoId(),
+        imei: msg.header.imei,
+        ucmid: msg.header.ucmid,
+        status: 0
+      };
+      
+      msg.header.flags = msg.header.flags === undefined
+        ? flag.NONE
+        : msg.header.flags;
+
+      const ringFlag = msg.header.flags & flag.SEND_RING_ALERT;
+      const flushFlag = msg.header.flags & flag.FLUSH_MT_QUEUE;
+      
+      if ( flushFlag ) { 
+        isu.mtMessages = [];
+      }
+
+      if ( msg.payload ) {
+    
+        if ( isu.mtMessages.length >= 50 ) {
+          confirmation.status = -5;
+        } else {
+          isu.mtMessages.push( msg );
+          confirmation.status = isu.mtMessages.length;
+          
+          // TODO: send a second ring alert
+          this.isuServer.sendRingAlert( msg.header.imei );
+
+        }
+
+      } else {
+
+        if ( ringFlag ) {
+          this.isuServer.sendRingAlert( msg.header.imei );
+        } else if ( !flushFlag ) {
+          confirmation.status = -4;
+        }
+
+      }
+
+      const confirmMsg = {
+        confirmation,
+      };
+
+      return confirmMsg;
+
+    } else {
+
+      const confirmMsg: Message.MT = {
+        confirmation: {
+          autoid: 0,
+          imei: '000000000000000',
+          ucmid: Buffer.from([ 
+            0x00, 0x00, 0x00, 0x00 
+          ]),
+          status: -4
+        }
+      };
+      
+      return confirmMsg;
+    }
 
   }
 
   // private increaseMTMSN( isu: SubscriberUnit  ) {
   //   isu.mtmsn = ( isu.mtmsn + 1 ) & 0xFFFF;
   // }
-
   private async sessionMsgWorker( msg: Transport.SessionMessage ) {
 
     const promises = this.transports.map(
@@ -75,7 +159,7 @@ export class GSS {
 
       if ( msgSent ) {
         
-        logger.debug( `MO #${
+        log.debug( `MO #${
           colors.green( msg.momsn.toString() )
         } sent from ISU ${ 
           colors.bold( msg.imei ) 
@@ -86,11 +170,11 @@ export class GSS {
       } else {
         
         setTimeout( () => {
-          this.subscriberUnits[ msg.imei ].sessionMsgQueue.push( msg )
+          this.subscriberUnits[ msg.imei ].sessionsQueue.push( msg )
         }, 30000 ); // TODO: this should be incremental
         
-        logger.error( `MO #${
-          colors.red(msg.momsn.toString())
+        log.error( `MO #${
+          colors.red( msg.momsn.toString() )
         } failed from ISU ${ 
           colors.bold( msg.imei ) 
         }`)
@@ -107,13 +191,16 @@ export class GSS {
     let isu = this.subscriberUnits[ imei ];
     
     if ( isu === undefined ) {
+      
       isu = this.subscriberUnits[ imei ] = {
         momsn: 0,
         mtmsn: 0,
         location: this.generateUnitLocation(),
-        sessionMsgQueue: fastq.promise(
-          this.sessionMsgWorker.bind( this ), 1 )
+        sessionsQueue: fastq.promise(
+          this.sessionMsgWorker.bind( this ), 1 ),
+        mtMessages: [],
       }
+
     }
 
     return isu;
@@ -131,22 +218,35 @@ export class GSS {
       mosts: 0,
       momsn: isu.momsn,
       mtsts: 0,
-      mtmsn: isu.mtmsn,
+      mtmsn: 0,
       mt: Buffer.from([]),
       mtq: 0,
+    };
+
+    const mtMsg = isu.mtMessages.shift();
+
+    if ( mtMsg?.payload ) {
+
+      sessionResp.mtsts = 1;
+      sessionResp.mtmsn = isu.mtmsn;
+
+      sessionResp.mt = mtMsg.payload.payload;
+      sessionResp.mtq = isu.mtMessages.length;
+
+      isu.mtmsn++;
     }
     
     const transportMsg: Transport.SessionMessage = {
+      time: moment(),
       imei: sessionReq.imei,
       momsn: sessionReq.momsn,
       mtmsn: isu.mtmsn,
       payload: sessionReq.mo,
-      time: moment(),
       location: isu.location,
       status: GSS.Session.Status.TRANSFER_OK,
     }
     
-    isu.sessionMsgQueue.push( transportMsg );      
+    isu.sessionsQueue.push( transportMsg );      
     
     // TODO: handle more error codes
     sessionResp.mosts = 0;
@@ -170,7 +270,7 @@ export namespace GSS {
       port: number;
       transport?: TCPTransport;
     };
-    suServer: { 
+    moServer: { 
       port: number;
     };
     transports: Transport[];

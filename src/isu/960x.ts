@@ -1,5 +1,4 @@
-import logger from "../logger";
-import nodemailer from "nodemailer";
+import * as logger from "../logger";
 import { ATInterface } from "../at/interface";
 import { 
   CMD_CGSN, 
@@ -17,7 +16,6 @@ import {
 import { GSS } from "../gss";
 
 import * as sio from "socket.io-client";
-import { TypeOfTag } from "typescript";
 
 export interface ModemOptions {
 
@@ -45,6 +43,8 @@ interface CIEV {
   svca: number;
   sigq: number;
 };
+
+const log = logger.create( '960x' );
 
 // TODO: create a parent class named Modem and rename this to SBDModem
 export class Modem {
@@ -143,16 +143,24 @@ export class Modem {
 
     this.socket.on( 'connect', () => {
       this.updateCIEV({
-        svca: 1
+        svca: 1,
+        sigq: 5,
       })
-      logger.debug( `GSS reached` );
+      log.debug( `GSS reached` );
     })
 
     this.socket.on( 'disconnect', () => {
+      
       this.updateCIEV({
-        svca: 0
-      })
-      logger.debug( `GSS lost` );
+        svca: 0,
+        sigq: 0,
+      });
+
+      log.debug( `GSS lost` );
+    })
+
+    this.socket.on( 'ring', () => {
+      this.at.enqueueLine( `SBDRING`, 'ring' );
     })
 
   }
@@ -174,10 +182,6 @@ export class Modem {
         alert: opts.alert || false,
       }
 
-      this.socket.on( 'ringAlert', () => {
-        this.at.enqueueLine( `SBDRING`, 'ring' );
-      })
-
       this.socket.timeout( 15000 ).emit( 
         'initSession', sessionReq, ( err: Error | null, sessionResp: GSS.SessionResponse ) => {
 
@@ -185,10 +189,10 @@ export class Modem {
             
             resolve({
               mosts: 32,
-              mtsts: 0,
+              mtsts: 2,
               momsn: this.momsn,
               mtmsn: this.mtmsn,
-              mt: this.mtBuffer.buffer,
+              mt: Buffer.from([]),
               mtq: 0
             });
 
@@ -203,6 +207,7 @@ export class Modem {
             if ( sessionResp.mtsts === 1 ) {
               Modem.updateMobileBuffer( this.mtBuffer, sessionResp.mt );
             }
+            
             resolve( sessionResp );
           }
       })
