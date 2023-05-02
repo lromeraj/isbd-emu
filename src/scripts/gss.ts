@@ -1,14 +1,10 @@
 import colors from "colors";
 import * as logger from "../logger";
-import { SerialPort } from "serialport"
 import { Argument, Command, Option, program } from "commander";
-import { Modem } from "../isu/960x";
 import { Transport } from "../gss/transport";
 import { SMTPTransport } from "../gss/transport/smtp";
 import { TCPTransport } from "../gss/transport/tcp";
 import { GSS } from "../gss";
-import fs from "fs-extra";
-import path from "path";
 
 const log = logger.create( 'main' );
 
@@ -100,7 +96,6 @@ async function main() {
     },
   })
 
-  
   // console.log( fs.readFileSync( path.join( __dirname, '../../ascii/gss.txt' ), 'ascii' ) )
 
 }

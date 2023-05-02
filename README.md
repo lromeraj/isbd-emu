@@ -312,19 +312,161 @@ This message will flush the _MT_ message queue in the GSS.
 >   - `2` - Send ring alert
 
 ## Decoder script
-You can invoke to de decoder using the following command:
+
+You can invoke to the decoder using the following command:
 ``` bash
 isbd decoder --help
 ```
 
+This will result in:
+``` txt
+Usage: decode [options] [file]
+
+Message decoder for Iridium SBD
+
+Arguments:
+  file           SBD message file path
+
+Options:
+  -V, --version  output the version number
+  --pretty       Output will be more human readable
+  -h, --help     display help for command
+```
+
+If you want to decode a message, just give the binary file to the decoder and it will detect automatically if it is a _MT_ message or a _MO_ message.
+
+The following command shows how to decode a _MT_ confirmation message:
+``` bash
+isbd decode MTC_527695889002193_13.sbd
+```
+
+This will result in something like:
+``` txt
+{"length":28,"rev":1,"confirmation":{"id":68,"length":25,"ucmid":[0,0,0,0],"imei":"527695889002193","autoid":13,"status":1}}
+2023-05-02T21:41:53.083Z [ OK ] decoder main: Message successfully decoded 
+```
+
+If you want a more human readable output, use `--pretty` flag like:
+``` bash
+isbd decode MTC_527695889002193_13.sbd --pretty
+```
+
+This actually results in:
+``` txt
+{
+	"length": 28,
+	"rev": 1,
+	"confirmation": {
+		"id": 68,
+		"length": 25,
+		"ucmid": [
+			0,
+			0,
+			0,
+			0
+		],
+		"imei": "527695889002193",
+		"autoid": 13,
+		"status": 1
+	}
+}
+2023-05-02T21:41:30.893Z [ OK ] decoder main: Message successfully decoded
+```
+
 ## Transport script
 
+This script will allow you to send _MT_ or _MO_ messages to a specific TCP server. You can invoke to this script using, for example:
 
+``` bash
+isbd transport --help
+``` 
+
+This will show you basic _CLI_ information:
+``` txt
+Usage: transport [options] [file]
+
+Iridium SBD message transporter
+
+Arguments:
+  file                 SBD binary message file
+
+Options:
+  -V, --version        output the version number
+  --tcp-host <string>  TCP transport host (default: "localhost")
+  --tcp-port <number>  TCP transport port (default: 10800)
+  -h, --help           display help for command
+```
+
+## Sending a MT message
+
+Here we shoe you an example on how to send a _MT_ message to the Iridium GSS, the steps consists in:
+  1. Encode a MT message from a file formatted in JSON
+  2. Transport the MT message
+  3. Decode the MT message transport confirmation
+
+First create the JSON file:
+``` json
+{
+  "header": {
+    "imei": "527695889002193",
+    "ucmid": [0,0,0,0],
+    "flags": 0
+  },
+  "payload": {
+    "payload": "Example message"
+  }
+}
+```
+
+Encode it:
+``` bash
+isbd encode mt.json > mt.sbd
+```
+
+Now send it using the transport script and save the confirmation message:
+``` bash
+isbd transport mt.sbd > mtc.sbd
+```
+
+Now decode the _MT_ confirmation message:
+``` bash
+isbd decode mtc.sbd --pretty
+```
+
+All of this steps can be unified in a one line version, because all the _CLI_ tools mentioned above, can be pipelined in order to redirect the input and output from each other. So here we show you a one line version of the previously mentioned steps:
+``` bash
+isbd encode mt.json | isbd transport | isbd decode --pretty
+```
+> **NOTE**: you can use this transport script directly with the official Iridium SBD Gateway, just make sure that the IP source in the packet that reaches Iridium's Gateway is properly whitelisted.
+
+If all of the execution chain succeeds, you should see an output like the following:
+``` txt
+2023-05-02T21:55:16.945Z [ OK ] encoder main: MT message encoded 
+2023-05-02T21:55:16.948Z [INFO] transport main: Sending MT message ... 
+2023-05-02T21:55:16.953Z [ OK ] transport main: MT confirmation received
+{
+	"length": 28,
+	"rev": 1,
+	"confirmation": {
+		"id": 68,
+		"length": 25,
+		"ucmid": [
+			0,
+			0,
+			0,
+			0
+		],
+		"imei": "527695889002193",
+		"autoid": 1,
+		"status": 0
+	}
+}
+2023-05-02T21:55:16.957Z [ OK ] decoder main: Message successfully decoded 
+```
 
 # General GSS behavior
+
 Here we'll describe how the Iridium SBD emulator operates depending on different conditions:
 
 - When a _MO_ message reaches the GSS this message is queued and **will be sent over each defined transport**, if the message reaches it's destination over at least one transport it is considered as received by the vendor application, otherwise the message will be requeued, this is the expected original Iridium behavior.
-- The emulator currently does not have any type of persistance and all data is volatile, when the program dies the information "disappears" with it. This will change in a near future. 
-
-> ~~**NOTE**: currently MT server is under development, but all decoders and encoders for TCP packets are ready to be used, just need some more time to integrate them.~~
+- The emulator currently does not have any type of persistence and all data is volatile, when the program dies the information "disappears" with it. This will change in a near future.  
