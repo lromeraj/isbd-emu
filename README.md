@@ -232,6 +232,7 @@ For further reference, [take a look to the Iridium 9602 SBD Transceiver Develope
 
 > **NOTE**: some AT commands are not currently supported and you'll receive an `ERROR` response code in such cases.
 
+
 # Tools
 This emulator also includes additional _CLI_ tools which may result useful while developing applications. This tools consist in three different scripts:
   - [Encoder](#encoder-script) script which allows to encode Iridium Direct IP messages.
@@ -310,6 +311,7 @@ This message will flush the _MT_ message queue in the GSS.
 > **NOTE**: Iridium SBD supports multiple flags, but this emulator supports (by the moment) only two flags: `1` and `2`.  
 >   - `1` - Flush MT queue
 >   - `2` - Send ring alert
+
 
 ## Decoder script
 
