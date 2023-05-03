@@ -6,12 +6,8 @@ variables:
 # ! Is important to allow CI_JOB_TOKEN in the private submodules referenced from this project: 
 # https://docs.gitlab.com/ee/ci/jobs/ci_job_token.html#add-a-project-to-the-inbound-job-token-scope-allowlist
 
-stages:
-  - test
-
-test:
-  stage: test
-  timeout: 1 minutes
+jest-tests:
+  timeout: 2 minutes
   script:
     - npm i
     - npm run test

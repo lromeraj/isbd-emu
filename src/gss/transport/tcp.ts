@@ -93,6 +93,7 @@ export class TCPTransport extends Transport {
   private encodeSessionMessage( msg: Transport.SessionMessage ): Buffer {
 
     const moMsg: Message.MO = {
+
       header: {
         cdr: 0,   // TODO: set CDR accordingly, 
                   // TODO: this field should be included in the SessionMessage type
@@ -102,11 +103,7 @@ export class TCPTransport extends Transport {
         status: msg.status,
         time: msg.time,
       },
-      location: {
-        latitude: msg.location.coord[ 0 ],
-        longitude: msg.location.coord[ 1 ],
-        cepRadius: msg.location.cepRadius,
-      },
+      location: msg.location,
     }
 
     if ( msg.payload.length > 0 ) {

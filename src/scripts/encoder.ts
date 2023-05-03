@@ -107,11 +107,8 @@ async function main() {
   
   if ( srcFilePath ) {
     inputStream = fs.createReadStream( srcFilePath );
-  } else if ( !process.stdin.isTTY ) {
-    inputStream = process.stdin;
   } else {
-    log.error( `Encode failed, input is empty` );
-    process.exit( 1 );
+    inputStream = process.stdin;
   }
 
   collectInputStream( inputStream ).then( jsonBuffer => {

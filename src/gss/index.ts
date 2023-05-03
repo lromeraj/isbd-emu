@@ -195,7 +195,7 @@ export class GSS {
       isu = this.subscriberUnits[ imei ] = {
         momsn: 0,
         mtmsn: 0,
-        location: this.generateUnitLocation(),
+        location: GSS.generateUnitLocation(),
         sessionsQueue: fastq.promise(
           this.sessionMsgWorker.bind( this ), 1 ),
         mtMessages: [],
@@ -254,9 +254,16 @@ export class GSS {
     return sessionResp;
   }
 
-  private generateUnitLocation(): GSS.UnitLocation {
+  static generateUnitLocation(): GSS.UnitLocation {
     return {
-      coord: [ -90 + Math.random() * 180, -90 + Math.random() * 180 ],
+      lat: {
+        deg: Math.floor( -90 + Math.random() * 180 ),
+        min: Math.floor( Math.random() * 60000 ),
+      },
+      lon: {
+        deg: Math.floor( -90 + Math.random() * 180 ),
+        min: Math.floor( Math.random() * 60000 ),
+      },
       cepRadius: 1 + Math.floor( Math.random() * 2000 ),
     }
   }
@@ -292,10 +299,7 @@ export namespace GSS {
     mtq: number;
   }
 
-  export interface UnitLocation {
-    coord: [ number, number ];
-    cepRadius: number;
-  }
+  export interface UnitLocation extends Message.MO.Location { }
 
   export namespace Session {
 

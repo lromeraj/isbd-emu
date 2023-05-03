@@ -4,6 +4,7 @@ import nodemailer from "nodemailer";
 import { Transport } from ".";
 import { GSS } from "../index";
 import Mail from "nodemailer/lib/mailer";
+import { getDecimalDegLocation } from "../msg";
 
 export class SMTPTransport extends Transport {
 
@@ -45,6 +46,8 @@ export class SMTPTransport extends Transport {
 
   private getTextFromMsg( msg: Transport.SessionMessage ): string {
 
+    const decDeglocation = getDecimalDegLocation( msg.location );
+
     return  `MOMSN: ${ msg.momsn }\n`
           + `MTMSN: ${ msg.mtmsn }\n`
           + `Time of Session (UTC): ${
@@ -53,9 +56,9 @@ export class SMTPTransport extends Transport {
           + `${ this.getStatusFromMsg( msg ) }\n`
           + `Message Size (bytes): ${ msg.payload.length }\n\n`
           + `Unit Location: Lat = ${
-              msg.location.coord[ 0 ].toFixed( 5 ) 
+              decDeglocation.latitude.toFixed( 5 )
             } Long = ${ 
-              msg.location.coord[ 1 ].toFixed( 5 ) 
+              decDeglocation.longitude.toFixed( 5 )
             }\n`
           + `CEPRadius = ${ msg.location.cepRadius.toFixed( 0 ) }`;
 
