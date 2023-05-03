@@ -173,104 +173,112 @@ export namespace Message {
 
   }
 
-}
+  /**
+   * Converts the given mobile orginated message location 
+   * into a decimal degreee coordinate representation
+   * 
+   * @param location 
+   * @returns Decimal degree coordiante representation
+   */
+  export function getDDLocation( location: Message.MO.Location ) {
 
-export function getDecimalDegLocation( location: Message.MO.Location ) {
-
-  const latitude = 
-    location.lat.deg 
-      + Math.sign( location.lat.deg ) * ( location.lat.min / 60000 );
-  
-  const longitude = 
-    location.lon.deg 
-      + Math.sign( location.lon.deg ) * ( location.lon.min / 60000 );
-
-  return {
-    latitude,
-    longitude, 
-  };
-
-}
-
-export function isMO( object: { [key: string]: any } ): boolean {
-  if ( object.header ) {
-    if ( object.header.cdr !== undefined ) {
-      return true;
-    }
-  }
-  return false;
-}
-
-export function isMT( object: { [key: string]: any } ): boolean {
-  if ( object.header ) {
-    if ( object.header.ucmid !== undefined ) {
-      return true;
-    }
-  } else if ( object.confirmation ) {
-
-    if ( object.confirmation.ucmid !== undefined 
-        && object.confirmation.autoid !== undefined ) {
-      return true;
-    }
-  }
-  return false;
-} 
-
-
-function toJSONObject( object: { [key: string]: any } ) {
-  for ( let key in object ) {
-
-    const val = object[ key ];
-
-    if ( val instanceof Buffer ) {
-      object[ key ] = [ ... val ];
-    } else if ( typeof val === 'string' && key === 'payload' ) {
-      object[ key ] = [ ... Buffer.from( val ) ];
-    } else if ( moment.isMoment( val ) ) {
-      object[ key ] = val.unix();
-    } else if ( typeof val === 'object' ) {
-      toJSONObject( val );
-    }
-  }
-}
-
-export function msgToJSON( object: { 
-  [key: string]: any 
-}, pretty: boolean = false): string {
-
-  const objCopy = { ...object };
-
-  toJSONObject( objCopy );
-
-  if ( pretty ) {
-    return JSON.stringify( objCopy, null, '\t' );
-  } else {
-    return JSON.stringify( objCopy );
-  }
-}
-
-function fromJSONObject( 
-  object: { [key: string]: any } 
-) {
-
-  for ( let key in object ) {
-
-    const val = object[ key ];
+    const latitude = 
+      location.lat.deg 
+        + Math.sign( location.lat.deg ) * ( location.lat.min / 60000 );
     
-    if ( val instanceof Array 
-      || ( typeof val === 'string' && key === 'payload' ) ) {
-      object[ key ] = Buffer.from( val );
-    } else if ( typeof val === 'number' && key === 'time' ) {
-      object[ key ] = moment.unix( val );
-    } else if ( typeof val === 'object' ) {
-      fromJSONObject( val );
-    }
-
+    const longitude = 
+      location.lon.deg 
+        + Math.sign( location.lon.deg ) * ( location.lon.min / 60000 );
+  
+    return {
+      latitude,
+      longitude, 
+    };
+  
   }
+  
+  export function isMO( object: { [key: string]: any } ): boolean {
+    if ( object.header ) {
+      if ( object.header.cdr !== undefined ) {
+        return true;
+      }
+    }
+    return false;
+  }
+  
+  export function isMT( object: { [key: string]: any } ): boolean {
+    if ( object.header ) {
+      if ( object.header.ucmid !== undefined ) {
+        return true;
+      }
+    } else if ( object.confirmation ) {
+  
+      if ( object.confirmation.ucmid !== undefined 
+          && object.confirmation.autoid !== undefined ) {
+        return true;
+      }
+    }
+    return false;
+  } 
+  
+  
+  function toJSONObject( object: { [key: string]: any } ) {
+    for ( let key in object ) {
+  
+      const val = object[ key ];
+  
+      if ( val instanceof Buffer ) {
+        object[ key ] = [ ... val ];
+      } else if ( typeof val === 'string' && key === 'payload' ) {
+        object[ key ] = [ ... Buffer.from( val ) ];
+      } else if ( moment.isMoment( val ) ) {
+        object[ key ] = val.unix();
+      } else if ( typeof val === 'object' ) {
+        toJSONObject( val );
+      }
+    }
+  }
+  
+  export function toJSON( object: { 
+    [key: string]: any 
+  }, pretty: boolean = false): string {
+  
+    const objCopy = { ...object };
+  
+    toJSONObject( objCopy );
+  
+    if ( pretty ) {
+      return JSON.stringify( objCopy, null, '\t' );
+    } else {
+      return JSON.stringify( objCopy );
+    }
+  }
+  
+  function fromJSONObject( 
+    object: { [key: string]: any } 
+  ) {
+  
+    for ( let key in object ) {
+  
+      const val = object[ key ];
+      
+      if ( val instanceof Array 
+        || ( typeof val === 'string' && key === 'payload' ) ) {
+        object[ key ] = Buffer.from( val );
+      } else if ( typeof val === 'number' && key === 'time' ) {
+        object[ key ] = moment.unix( val );
+      } else if ( typeof val === 'object' ) {
+        fromJSONObject( val );
+      }
+  
+    }
+  }
+  
+  export function fromJSON( jsonStr: string ) {
+    const obj = JSON.parse( jsonStr );
+    fromJSONObject( obj );
+    return obj;
+  }
+
 }
 
-export function msgFromJSON( jsonStr: string ) {
-  const obj = JSON.parse( jsonStr );
-  fromJSONObject( obj );
-  return obj;
-}

@@ -4,7 +4,7 @@ import fs from "fs-extra";
 import colors from "colors";
 import  * as logger from "../logger"
 import { Argument, Command, Option, program } from "commander";
-import { Message, msgToJSON } from "../gss/msg";
+import { Message } from "../gss/msg";
 import { TCPTransport } from "../gss/transport/tcp";
 import { decodeMoMessage, decodeMtMessage } from "../gss/msg/decoder";
 import { encodeMoMsg, encodeMtMessage } from "../gss/msg/encoder";

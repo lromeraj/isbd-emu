@@ -1,10 +1,6 @@
-import { ATCmd } from '../at/cmd';
-import { SerialPort } from 'serialport';
-import { ATInterface } from '../at/interface';
-import { CMD_AT, CMD_ECHO, CMD_VERBOSE } from '../at/commands';
-import { IE_H_LEN, IE_MO_HEADER_LEN, IE_MO_LOCATION_LEN, MSG_H_LEN, Message } from '../gss/msg';
 import moment from 'moment';
 import { GSS } from '../gss';
+import { Message } from '../gss/msg';
 import { encodeMoMsg } from '../gss/msg/encoder';
 import { decodeMoMessage } from '../gss/msg/decoder';
 
@@ -12,9 +8,9 @@ describe( 'ISBD Direct IP message decoding tests', () => {
   
   const sampleData = {
     imei: "105170868074050",
-    payload: Buffer.from( "This is a test message" ),
     location: GSS.generateUnitLocation(),
-  }
+    payload: Buffer.from( "This is a test message" ),
+  };
 
   test( 'MO message bijection test', () => {
 
@@ -46,7 +42,7 @@ describe( 'ISBD Direct IP message decoding tests', () => {
       }
 
     }
-
+    
     expect( oldDecodedMsg.header?.imei ).toBe( sampleData.imei )
     expect( oldDecodedMsg.location?.cepRadius ).toBe( sampleData.location.cepRadius );
 
