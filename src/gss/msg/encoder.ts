@@ -64,17 +64,41 @@ function encodeMoLocation(
 
   const buffer = Buffer.alloc( IE_H_LEN + IE_MO_LOCATION_LEN );
   
-  const nsi = Number( msg.latitude < 0 ) << 1
-  const ewi = Number( msg.longitude < 0 )
-  
-  const latDeg = Math.abs( Math.trunc( msg.latitude ) )
-  const lonDeg = Math.abs( Math.trunc( msg.longitude ) )
+  let   nsi, // north south indicator 
+        ewi; // east west indicator
 
-  let latThoMin = Math.abs( msg.latitude ) % 1 
-  let lonThoMin = Math.abs( msg.longitude ) % 1 
+  let   latDeg, // latitude degrees
+        lonDeg; // longitue degrees
+
+  let   latThoMin, // latitude thousand minutes
+        lonThoMin; // longitude thousand minutes
+
+  if ( msg.latitude && msg.longitude ) {
+
+    nsi = Number( msg.latitude < 0 ) << 1
+    ewi = Number( msg.longitude < 0 )
+
+    latDeg = Math.abs( Math.trunc( msg.latitude ) )
+    lonDeg = Math.abs( Math.trunc( msg.longitude ) )
+
+    latThoMin = Math.abs( msg.latitude ) % 1 
+    lonThoMin = Math.abs( msg.longitude ) % 1 
   
-  latThoMin = Math.round( latThoMin * 60000 )
-  lonThoMin = Math.round( lonThoMin * 60000 )
+    latThoMin = Math.round( latThoMin * 60000 )
+    lonThoMin = Math.round( lonThoMin * 60000 )
+
+  } else {
+
+    nsi = Number( msg.lat.deg < 0 ) << 1
+    ewi = Number( msg.lon.deg < 0 )
+
+    latDeg = Math.abs( msg.lat.deg )
+    lonDeg = Math.abs( msg.lon.deg )
+
+    latThoMin = msg.lat.min;
+    lonThoMin = msg.lon.min;
+
+  }
 
   let offset = 0;
   offset = buffer.writeUint8( IE_MO_LOCATION_ID, offset );
@@ -93,7 +117,7 @@ export function encodeMoMsg(
   msg: Message.MO
 ): Buffer {
   
-  let payload: Buffer[] = [] 
+  let payload: Buffer[] = [];
 
   if ( msg.header ) {
     payload.push( 

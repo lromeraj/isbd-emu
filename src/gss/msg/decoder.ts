@@ -62,6 +62,14 @@ function decodeMoLocation( msg: Message.MO, data: Buffer, offset: number ): numb
   const location: Required<Message.MO.Location> = {
     id: data.readUint8( offset ),
     length: data.readUInt16BE( offset + 1 ),
+    lat: {
+      deg: 0,
+      min: 0,
+    },
+    lon: {
+      deg: 0,
+      min: 0,
+    },
     latitude: 0,
     longitude: 0,
     cepRadius: data.readUint32BE( offset + 10 ),
@@ -73,11 +81,24 @@ function decodeMoLocation( msg: Message.MO, data: Buffer, offset: number ): numb
   const lonDeg = data.readUint8( offset + 7 )
   const lonThoMin = data.readUint16BE( offset + 8 )
 
-  const ewi = header & 0x1 // north/south indicator
-  const nsi = (header >> 1) & 0x1 // east/west indicator
+  // north/south indicator
+  const ewi = ( header & 0x01 ) ? -1 : 1 
 
-  location.latitude = ( nsi ? -1 : 1 ) * (latDeg + (latThoMin/60000))
-  location.longitude = ( ewi ? -1 : 1 ) * (lonDeg + (lonThoMin/60000))
+  // east/west indicator
+  const nsi = ( ( header >> 1 ) & 0x01 ) ? -1 : 1
+
+  location.latitude = nsi * (latDeg + (latThoMin/60000))
+  location.longitude = ewi * (lonDeg + (lonThoMin/60000))
+
+  location.lat = {
+    deg: nsi * latDeg,
+    min: latThoMin,
+  };
+
+  location.lon = {
+    deg: ewi * lonDeg,
+    min: lonThoMin,
+  };
 
   msg.location = location;
 

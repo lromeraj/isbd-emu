@@ -88,8 +88,27 @@ export namespace Message {
     }
     
     export interface Location extends IE {
-      longitude: number;
-      latitude: number;
+      
+      /**
+       * @deprecated Use `lon` instead
+       */
+      longitude?: number;
+
+      /**
+       * @deprecated Use `lat` instead
+       */
+      latitude?: number;
+      
+      lat: {
+        deg: number; // negative or positive
+        min: number; // thousand minutes
+      };
+
+      lon: {
+        deg: number; // negative or positive
+        min: number; // thousand minutes
+      };
+
       cepRadius: number;
     }
     
@@ -156,6 +175,22 @@ export namespace Message {
 
 }
 
+export function getDecimalDegLocation( location: Message.MO.Location ) {
+
+  const latitude = 
+    location.lat.deg 
+      + Math.sign( location.lat.deg ) * ( location.lat.min / 60000 );
+  
+  const longitude = 
+    location.lon.deg 
+      + Math.sign( location.lon.deg ) * ( location.lon.min / 60000 );
+
+  return {
+    latitude,
+    longitude, 
+  };
+
+}
 
 export function isMO( object: { [key: string]: any } ): boolean {
   if ( object.header ) {

@@ -101,7 +101,6 @@ async function main() {
   logger.setProgramName( 'transport' );
   
   if ( !process.stdout.isTTY ) {
-    
     logger.disableTTY();
   }
   
@@ -110,11 +109,8 @@ async function main() {
 
   if ( srcFilePath ) {
     inputStream = fs.createReadStream( srcFilePath );
-  } else if ( !process.stdin.isTTY ) {
-    inputStream = process.stdin;
   } else {
-    log.error( `Transport failed, input is empty` );
-    process.exit( 1 );
+    inputStream = process.stdin;
   }
 
   collectInputStream( inputStream ).then( buffer => {
