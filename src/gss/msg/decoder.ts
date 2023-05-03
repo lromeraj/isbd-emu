@@ -87,6 +87,7 @@ function decodeMoLocation( msg: Message.MO, data: Buffer, offset: number ): numb
   // east/west indicator
   const nsi = ( ( header >> 1 ) & 0x01 ) ? -1 : 1
 
+  // this will be removed in a near future
   location.latitude = nsi * (latDeg + (latThoMin/60000))
   location.longitude = ewi * (lonDeg + (lonThoMin/60000))
 

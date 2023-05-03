@@ -4,7 +4,7 @@ import nodemailer from "nodemailer";
 import { Transport } from ".";
 import { GSS } from "../index";
 import Mail from "nodemailer/lib/mailer";
-import { getDecimalDegLocation } from "../msg";
+import { Message } from "../msg";
 
 export class SMTPTransport extends Transport {
 
@@ -24,6 +24,7 @@ export class SMTPTransport extends Transport {
     });
 
   }
+
 
   sendBuffer( buffer: Buffer ): Promise<Buffer> {
     return Promise.resolve( Buffer.from([]) );
@@ -46,7 +47,7 @@ export class SMTPTransport extends Transport {
 
   private getTextFromMsg( msg: Transport.SessionMessage ): string {
 
-    const decDeglocation = getDecimalDegLocation( msg.location );
+    const decDeglocation = Message.getDDLocation( msg.location );
 
     return  `MOMSN: ${ msg.momsn }\n`
           + `MTMSN: ${ msg.mtmsn }\n`

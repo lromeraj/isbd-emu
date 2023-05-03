@@ -12,9 +12,9 @@ describe( 'ISBD Direct IP message decoding tests', () => {
   
   const sampleData = {
     imei: "105170868074050",
-    payload: Buffer.from( "This is a test message" ),
     location: GSS.generateUnitLocation(),
-  }
+    payload: Buffer.from( "This is a test message" ),
+  };
 
   test( 'MO message bijection test', () => {
 
@@ -46,7 +46,7 @@ describe( 'ISBD Direct IP message decoding tests', () => {
       }
 
     }
-
+    
     expect( oldDecodedMsg.header?.imei ).toBe( sampleData.imei )
     expect( oldDecodedMsg.location?.cepRadius ).toBe( sampleData.location.cepRadius );
 

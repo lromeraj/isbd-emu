@@ -4,7 +4,7 @@ import fs from "fs-extra";
 import colors from "colors";
 import * as logger from "../logger"
 import { Argument, Command, Option, program } from "commander";
-import { Message, msgFromJSON, isMT, isMO } from "../gss/msg";
+import { Message } from "../gss/msg";
 import { TCPTransport } from "../gss/transport/tcp";
 import { encodeMoMsg, encodeMtMessage } from "../gss/msg/encoder";
 import { Readable } from "stream";
@@ -113,11 +113,11 @@ async function main() {
 
   collectInputStream( inputStream ).then( jsonBuffer => {
 
-    const msgObj = msgFromJSON( jsonBuffer.toString() );
+    const msgObj = Message.fromJSON( jsonBuffer.toString() );
 
-    if ( isMT( msgObj ) ) {
+    if ( Message.isMT( msgObj ) ) {
       processMtMessage( msgObj as Message.MT );
-    } else if ( isMO( msgObj ) ) {
+    } else if ( Message.isMO( msgObj ) ) {
       processMoMessage( msgObj as Message.MO );
     } else {
       log.error( `Invalid JSON, could not recognize message type` );
