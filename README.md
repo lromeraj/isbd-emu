@@ -8,6 +8,25 @@ This repository is still in its early stages, so you may find that some extra fu
 
 This emulator also includes [some extra tools](#tools) that you may find useful during the development process.
 
+# Index
+
+- [Iridium SBD emulator](#iridium-sbd-emulator)
+- [Index](#index)
+- [Implementation](#implementation)
+- [Building the emulator](#building-the-emulator)
+- [Setting up the environment](#setting-up-the-environment)
+- [Running the emulator](#running-the-emulator)
+  - [Generating Google application passwords for SMTP](#generating-google-application-passwords-for-smtp)
+  - [MO message sample](#mo-message-sample)
+- [Tools](#tools)
+  - [Encoder script](#encoder-script)
+    - [Encoding MT messages](#encoding-mt-messages)
+  - [Decoder script](#decoder-script)
+  - [Transport script](#transport-script)
+  - [Sending a MT message](#sending-a-mt-message)
+- [General GSS behavior](#general-gss-behavior)
+
+
 # Implementation
 
 This emulator is written in [TypeScript](https://www.typescriptlang.org/) which is a strongly typed programming language that builds on JavaScript (NodeJS environment in this case).
@@ -24,7 +43,7 @@ The core of this emulator is also exposed in order to be reused for more specifi
 
 > **NOTE**: currently, there is no documentation available for core utils. Depending on how useful this emulator is for the community, I will consider adding extra documentation for that purpose. 
 
-# Building
+# Building the emulator
 Before building this emulator you'll need to install `NodeJS` environment (which you probably have already installed) but in case you don't, you can simply do:
 
 > **NOTE**: the following instructions assume you are working from Ubuntu. If you need specific instructions for your OS, search in Google how to install `Node JS v14.x`.
