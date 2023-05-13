@@ -1,8 +1,12 @@
 # Iridium SBD emulator
 
-This emulator has been implemented due to the current lack of active _Iridium SBD 960X_ and _GSS_ emulators, there are currently some repositories which implements a tiny Iridium SBD emulator, but they are totally unmaintained and have not been updated in the last years. Those implementations are using a very old versions of Python and there are some incompatible dependencies.
+This emulator has been developed in response to the lack of active emulators for Iridium SBD 960X and GSS. While there are a few repositories that provide a small Iridium SBD emulator, they are currently unmaintained and have not been updated in years. Furthermore, these implementations rely on outdated versions of Python and include incompatible dependencies.
+
+This repository is still in its early stages, so you may find that some extra functionality is missing, if that's the case do not hesitate on requesting such functionality to be implemented by creating an issue. I'll do my best to address it as soon as possible. Any help or participation would be greatly appreciated.
 
 > **NOTE**: this emulator does not emulate the behavior of a satellite network (at least by the moment), this is implicitly abstracted within the GSS.
+
+This emulator also includes [some extra tools](#tools) that you may find useful during the development process.
 
 # Implementation
 
@@ -10,13 +14,15 @@ This emulator is written in [TypeScript](https://www.typescriptlang.org/) which 
 
 The idea of this implementation is to be flexible in order to facilitate the process of adding new functionality to the emulator. Currently there are some limitations, multiple AT commands are not currently supported and in some cases only a subset of all possible error codes are used.
 
-This emulator actually consists in two different programs: `960x.js` emulator and `gss.js` emulator, the first one allows you to instantiate an _Iridium SBD 960X_ like transceiver and the `gss.js` allows you to emulate an Iridium GSS locally.
+This emulator actually consists in two different programs: `960x.js` emulator and `gss.js` emulator, the first one allows you to instantiate an _Iridium SBD 960X_ like transceiver and the `gss.js` allows you to emulate an Iridium GSS "locally".
 
 > **NOTE**: this emulator can be run in different machines, this means that you can run the `960x.js` emulator on a different machine from where the transceiver `960x.js` is running.
 
 > **IMPORTANT**: if you use a _WAN_, remember that all the data travels over TCP or HTTP/TCP without TLS (like Iridium does).
 
-The core of the emulator is also exposed in order to be reused for more specific implementations.
+The core of this emulator is also exposed in order to be reused for more specific implementations.
+
+> **NOTE**: currently, there is no documentation available for core utils. Depending on how useful this emulator is for the community, I will consider adding extra documentation for that purpose. 
 
 # Building
 Before building this emulator you'll need to install `NodeJS` environment (which you probably have already installed) but in case you don't, you can simply do:
@@ -27,7 +33,7 @@ Before building this emulator you'll need to install `NodeJS` environment (which
 curl -sL https://deb.nodesource.com/setup_14.x -o nodesource_setup.sh
 ```
 
-Check it's contents if you don't feel comfortable with a direct "blind" install:
+If you don't feel comfortable with a direct "blind" install, please check the content:
 ``` bash
 nano nodesource_setup.sh
 ```
