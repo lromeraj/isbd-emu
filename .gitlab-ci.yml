@@ -2,6 +2,7 @@ image: node:latest
 
 cache:
   paths:
+    - build/
     - node_modules/
 
 build-job:
