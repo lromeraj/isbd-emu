@@ -1,4 +1,8 @@
-image: node:latest
+default:
+  image: node:latest
+  tags:
+    - moon
+    - docker
 
 cache:
   paths:
