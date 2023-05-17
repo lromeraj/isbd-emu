@@ -1,4 +1,4 @@
-# Iridium SBD emulator
+# Iridium SBD emulator ![](https://github.com/lromeraj/isbd-emu/actions/workflows/node.js.yml/badge.svg)
 
 This emulator has been developed in response to the lack of active emulators for Iridium SBD 960X and GSS. While there are a few repositories that provide a small Iridium SBD emulator, they are currently unmaintained and have not been updated in years. Furthermore, these implementations rely on outdated versions of Python and include incompatible dependencies.
 
@@ -10,7 +10,7 @@ This emulator also includes [some extra tools](#tools) that you may find useful 
 
 # Index
 
-- [Iridium SBD emulator](#iridium-sbd-emulator)
+- [Iridium SBD emulator ](#iridium-sbd-emulator-)
 - [Index](#index)
 - [Implementation](#implementation)
 - [Building the emulator](#building-the-emulator)
