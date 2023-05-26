@@ -48,8 +48,9 @@ export class TCPTransport extends Transport {
       }
 
       const resolveSending = ( response: Buffer ) => {
-        client.end();
-        resolve( response );
+        client.end( () => {
+          resolve( response );
+        })
       }
 
       client.setTimeout( this.SOCKET_TIMEOUT );

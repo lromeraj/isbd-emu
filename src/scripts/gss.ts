@@ -31,7 +31,8 @@ program.addOption(
   new Option( '--mo-smtp-to <string>', 'MO SMTP transport destination address' ) )
 
 program.addOption(
-  new Option( '--mo-tcp-host <string>', 'MO TCP transport host' ) )
+  new Option( '--mo-tcp-host <string>', 'MO TCP transport host' )
+    .default( 'localhost' ) )
 
 program.addOption(
   new Option( '--mo-tcp-port <number>', 'MO TCP transport port' )
@@ -54,6 +55,9 @@ async function main() {
 
   const transports: Transport[] = []
 
+
+  let smtpTransport: SMTPTransport | undefined = undefined;
+
   if ( opts.moSmtpUser && opts.moSmtpHost ) {
 
     const smtpOpts = {
@@ -64,7 +68,9 @@ async function main() {
       to: opts.moSmtpTo,
     } as SMTPTransport.Options;
     
-    transports.push( new SMTPTransport( smtpOpts ) );
+    smtpTransport = new SMTPTransport( smtpOpts )
+    transports.push( smtpTransport );
+
   }
 
   let tcpTransport: TCPTransport | undefined = undefined;
@@ -83,6 +89,23 @@ async function main() {
 
   if ( transports.length === 0 ) {
     log.warn( `No MO transports defined` );
+  } else {
+
+    if ( tcpTransport ) {
+      log.info( `Using MO TCP transport ${
+        colors.green( opts.moTcpHost )
+      }:${
+        colors.yellow( opts.moTcpPort )
+      }` )
+    }
+
+    if ( smtpTransport ) {
+      log.info( `Using MO SMTP transport ${
+        colors.green( opts.moSmtpHost )
+      }:${
+        colors.yellow( opts.moSmtpPort )
+      }` )
+    }
   }
 
   const gss = new GSS({ // gss instance
