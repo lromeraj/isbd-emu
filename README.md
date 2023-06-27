@@ -6,6 +6,10 @@ This repository is still in its early stages, so you may find that some extra fu
 
 > **NOTE**: this emulator does not emulate the behavior of a satellite network (at least by the moment), this is implicitly abstracted within the GSS.
 
+The following image shows a simple deployment using the emulator:
+
+![](./img/emu-deployment.jpg)
+
 This emulator also includes [some extra tools](#tools) that you may find useful during the development process.
 
 # Index
