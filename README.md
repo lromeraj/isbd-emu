@@ -178,7 +178,7 @@ This will output something like:
 
 If you are still running the `960x` program the _ISU_ will connect automatically to the _GSS_ (like if a satellite was reachable).
 
-The warning says that there are no _MO_ (_Mobile Originated_) transports defined, this transports are used in order to allow the _GSS_ to retransmit _MO_ messages from the _ISUs_ (_Iridium Subscriber Units_) to the [vendor server application](https://glab.lromeraj.net/ucm/miot/tfm/iridium-sbd-server). To fix that, just specify at least one _MO_ transport.
+The warning says that there are no _MO_ (_Mobile Originated_) transports defined, this transports are used in order to allow the _GSS_ to retransmit _MO_ messages from the _ISUs_ (_Iridium Subscriber Units_) to the [vendor server application](https://github.com/lromeraj/isbd-server). To fix that, just specify at least one _MO_ transport.
 
 This emulator **supports two types of _MO_ transports**: `TCP` and `SMTP` (same as Iridium). You can use one or both at the same time. Use `--help` to see all the available command line options for the _GSS_:
 ``` txt
@@ -211,7 +211,7 @@ isbd gss -vvv \
 
 - If you want to use Gmail's SMTP service refer to [this section](#generating-google-application-passwords-for-smtp).
 
-If you want to use the _MO_ transport as _TCP_, you'll need a running instance of [Iridium Direct IP compatible server](https://glab.lromeraj.net/ucm/miot/tfm/iridium-sbd-server). The required option to enable _TCP_ transport is `--mo-tcp-host`, the port is `10801` by default. For example:
+If you want to use the _MO_ transport as _TCP_, you'll need a running instance of [Iridium Direct IP compatible server](https://github.com/lromeraj/isbd-server). The required option to enable _TCP_ transport is `--mo-tcp-host`, the port is `10801` by default. For example:
 ``` bash
 isbd gss -vvv \
   --mo-tcp-host localhost \
