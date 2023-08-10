@@ -19,6 +19,7 @@ enum ATIStatus {
 
 const log = logger.create( __filename );
 
+// TODO: rename to AT Server ...
 export class ATInterface {
 
   sp: SerialPort;
