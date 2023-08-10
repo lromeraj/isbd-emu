@@ -50,10 +50,10 @@ The core of this emulator is also exposed in order to be reused for more specifi
 # Building the emulator
 Before building this emulator you'll need to install `NodeJS` environment (which you probably have already installed) but in case you don't, you can simply do:
 
-> **NOTE**: the following instructions assume you are working from Ubuntu. If you need specific instructions for your OS, search in Google how to install `Node JS v14.x`.
+> **NOTE**: the following instructions assume you are working from Ubuntu. If you need specific instructions for your OS, search in Google how to install `Node JS v16.x`.
 
 ``` bash
-curl -sL https://deb.nodesource.com/setup_14.x -o nodesource_setup.sh
+curl -sL https://deb.nodesource.com/setup_16.x -o nodesource_setup.sh
 ```
 
 If you don't feel comfortable with a direct "blind" install, please check the content:
