@@ -34,7 +34,7 @@ export class MTServer extends EventEmitter {
     this.tcpServer = net.createServer();
 
     this.tcpServer.listen( options.port, () => {
-      log.success( `MT server ready, port=${
+      log.success( `MT server ready, port: ${
         colors.yellow( options.port.toString() )
       }` );
     })

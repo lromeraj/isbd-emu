@@ -83,7 +83,7 @@ function processMoMessage( transport: TCPTransport, reqBuff: Buffer ) {
   log.info( `Sending MO message ...` );
 
   return transport.sendBuffer( reqBuff ).then(() => {
-    log.info( `MO message sent` );
+    log.success( `MO message sent` );
   }).catch( err => {
     log.error( `Could not send MO message => ${ err.message }` );
   })

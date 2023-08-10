@@ -48,7 +48,7 @@ export class ISUServer extends EventEmitter {
     this.socketServer = new sio.Server( this.httpServer );
 
     this.httpServer.listen( options.port, () => {
-      log.success( `ISU server ready, port=${
+      log.success( `ISU server ready, port: ${
         colors.yellow( options.port.toString() )
       }` );
     })
