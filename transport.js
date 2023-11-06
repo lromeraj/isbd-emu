@@ -1,1 +1,1 @@
-build/scripts/transport.js
+dist/scripts/transport.js

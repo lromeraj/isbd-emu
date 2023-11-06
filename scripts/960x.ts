@@ -1,7 +1,7 @@
 import colors from "colors";
-import * as logger from "../logger";
+import * as logger from "../src/logger";
 import { Argument, Command, Option, program } from "commander";
-import { Modem } from "../isu/960x";
+import { Modem } from "../src/isu/960x";
 
 program
   .version( '0.0.5' )

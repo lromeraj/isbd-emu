@@ -1,7 +1,6 @@
-import { ATCmd } from '../at/cmd';
-import { SerialPort } from 'serialport';
-import { ATInterface } from '../at/interface';
-import { CMD_AT, CMD_ECHO, CMD_VERBOSE } from '../at/commands';
+import { ATCmd } from '../src/at/cmd';
+import { ATInterface } from '../src/at/interface';
+import { CMD_AT, CMD_ECHO, CMD_VERBOSE } from '../src/at/commands';
 
 describe( 'AT Interface command test', () => {
   

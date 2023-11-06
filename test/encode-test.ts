@@ -1,7 +1,13 @@
-import { IE_H_LEN, IE_MO_HEADER_LEN, IE_MO_LOCATION_LEN, MSG_H_LEN, Message } from '../gss/msg';
+import { 
+	IE_H_LEN, 
+	IE_MO_HEADER_LEN, 
+	IE_MO_LOCATION_LEN, 
+	MSG_H_LEN, 
+	Message 
+} from '../src/gss/msg';
 import moment from 'moment';
-import { GSS } from '../gss';
-import { encodeMoMsg } from '../gss/msg/encoder';
+import { GSS } from '../src/gss';
+import { encodeMoMsg } from '../src/gss/msg/encoder';
 
 describe( 'ISBD Direct IP message encoding tests', () => {
   
