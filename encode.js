@@ -1,1 +1,1 @@
-build/scripts/encoder.js
+dist/scripts/encoder.js

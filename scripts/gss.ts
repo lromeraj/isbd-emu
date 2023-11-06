@@ -1,10 +1,10 @@
 import colors from "colors";
-import * as logger from "../logger";
+import * as logger from "../src/logger";
 import { Argument, Command, Option, program } from "commander";
-import { Transport } from "../gss/transport";
-import { SMTPTransport } from "../gss/transport/smtp";
-import { TCPTransport } from "../gss/transport/tcp";
-import { GSS } from "../gss";
+import { Transport } from "../src/gss/transport";
+import { SMTPTransport } from "../src/gss/transport/smtp";
+import { TCPTransport } from "../src/gss/transport/tcp";
+import { GSS } from "../src/gss";
 
 const log = logger.create( 'main' );
 

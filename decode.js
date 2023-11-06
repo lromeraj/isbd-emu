@@ -1,1 +1,1 @@
-build/scripts/decoder.js
+dist/scripts/decoder.js

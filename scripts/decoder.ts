@@ -2,10 +2,10 @@
 
 import fs from "fs-extra";
 import colors from "colors";
-import * as logger from "../logger"
+import * as logger from "../src/logger"
 import { Argument, Command, Option, program } from "commander";
-import { decodeMoMessage, decodeMtMessage } from "../gss/msg/decoder";
-import { Message } from "../gss/msg";
+import { decodeMoMessage, decodeMtMessage } from "../src/gss/msg/decoder";
+import { Message } from "../src/gss/msg";
 import { Readable } from "stream";
 import { collectInputStream } from "./utils";
 
