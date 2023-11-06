@@ -1,1 +1,1 @@
-build/scripts/960x.js
+dist/scripts/960x.js

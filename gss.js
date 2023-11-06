@@ -1,1 +1,1 @@
-build/scripts/gss.js
+dist/scripts/gss.js

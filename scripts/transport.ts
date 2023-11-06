@@ -2,12 +2,12 @@
 
 import fs from "fs-extra";
 import colors from "colors";
-import  * as logger from "../logger"
+import  * as logger from "../src/logger"
 import { Argument, Command, Option, program } from "commander";
-import { Message } from "../gss/msg";
-import { TCPTransport } from "../gss/transport/tcp";
-import { decodeMoMessage, decodeMtMessage } from "../gss/msg/decoder";
-import { encodeMoMsg, encodeMtMessage } from "../gss/msg/encoder";
+import { Message } from "../src/gss/msg";
+import { TCPTransport } from "../src/gss/transport/tcp";
+import { decodeMoMessage, decodeMtMessage } from "../src/gss/msg/decoder";
+import { encodeMoMsg, encodeMtMessage } from "../src/gss/msg/encoder";
 import { Readable, Stream } from "stream";
 import { ReadStream } from "fs";
 import { collectInputStream } from "./utils";

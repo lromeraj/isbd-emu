@@ -1,8 +1,8 @@
 import moment from 'moment';
-import { GSS } from '../gss';
-import { Message } from '../gss/msg';
-import { encodeMoMsg } from '../gss/msg/encoder';
-import { decodeMoMessage } from '../gss/msg/decoder';
+import { GSS } from '../src/gss';
+import { Message } from '../src/gss/msg';
+import { encodeMoMsg } from '../src/gss/msg/encoder';
+import { decodeMoMessage } from '../src/gss/msg/decoder';
 
 describe( 'ISBD Direct IP message decoding tests', () => {
   
