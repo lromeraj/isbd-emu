@@ -39,6 +39,7 @@ var ATIStatus;
 })(ATIStatus || (ATIStatus = {}));
 ;
 const log = logger.create(__filename);
+// TODO: rename to AT Server ...
 class ATInterface {
     constructor(serialPortOpts) {
         this.commands = [];
