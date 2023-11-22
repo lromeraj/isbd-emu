@@ -1,1 +1,0 @@
-dist/scripts/gss.js

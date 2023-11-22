@@ -1,8 +1,8 @@
 {
   "name": "isbd-emu",
   "version": "0.0.1",
-  "description": "A simple emulator for Iridium SBD 9602/9603 transceivers",
-  "main": "dist/src/index.js",
+  "description": "A simple emulator for Iridium SBD GSS and 960x transceivers",
+  "main": "dist/index.js",
   "scripts": {
     "test": "npm run build && jest",
     "build": "rimraf build/ && tsc --project tsconfig.json",
@@ -10,6 +10,7 @@
   },
   "keywords": [
     "iridium",
+		"gss",
     "sbd",
     "cli"
   ],

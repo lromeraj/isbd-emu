@@ -9,7 +9,7 @@ import { decodeMtMessage } from "../../msg/decoder";
 import { Message } from "../../msg";
 import { encodeMtMessage } from "../../msg/encoder";
 
-const log = logger.create( 'mt-server' );
+const log = logger.create( __filename );
 
 export class MTServer extends EventEmitter {
 
@@ -34,7 +34,7 @@ export class MTServer extends EventEmitter {
     this.tcpServer = net.createServer();
 
     this.tcpServer.listen( options.port, () => {
-      log.success( `MT server ready, port: ${
+      log.info( `MT server ready, port: ${
         colors.yellow( options.port.toString() )
       }` );
     })

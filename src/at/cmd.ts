@@ -1,7 +1,7 @@
 import * as logger from "../logger";
 import type { ATInterface } from "./interface";
 
-const log = logger.create( 'at-cmd' );
+const log = logger.create( __filename );
 
 export class ATCmd<ContextType> {
 
