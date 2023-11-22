@@ -1,0 +1,20 @@
+variables:
+  # GIT_CLONE_PATH: $CI_BUILDS_DIR/cloudflare-dns # https://stackoverflow.com/questions/64089704/gitlab-runner-change-builds-dir
+  # GIT_CLEAN_FLAGS: none # https://gitlab.com/gitlab-org/gitlab-runner/-/issues/4154
+  # GIT_SUBMODULE_STRATEGY: recursive # https://docs.gitlab.com/ee/ci/git_submodules.html#use-git-submodules-in-cicd-jobs
+
+stages:
+  - build
+  - test
+  - deploy
+
+tests:
+  stage: test
+  image: node:16-slim
+  script:
+    - npm i
+    - npm run test
+  only:
+    - dev
+  tags:
+    - docker

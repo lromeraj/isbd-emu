@@ -1,11 +1,5 @@
 import fs from "fs-extra";
-import colors from "colors";
-import net, { Socket } from "net";
-
 import { Transport } from ".";
-import { encodeMoMsg } from "../msg/encoder";
-import { Message } from "../msg";
-import stream from "stream";
 
 
 export class FileTransport extends Transport {

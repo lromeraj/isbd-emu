@@ -3,7 +3,7 @@ SCRIPT_NAME=$(basename ${BASH_SOURCE[0]})
 
 function isbd {
 	NODE_SCRIPT_NAME=$1
-	NODE_SCRIPT_PATH=$SCRIPT_DIR/$NODE_SCRIPT_NAME.js
+	NODE_SCRIPT_PATH=$SCRIPT_DIR/exe/$NODE_SCRIPT_NAME.js
   shift
   if [ -n "$NODE_SCRIPT_NAME" ]; then
     if [ -e $NODE_SCRIPT_PATH ]; then
