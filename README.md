@@ -50,7 +50,11 @@ The core of this emulator is also exposed in order to be reused for more specifi
 # Building the emulator
 
 <<<<<<< HEAD
+<<<<<<< HEAD
 > **NOTE**: before building this emulator, ensure you have the Node JS environment installed (which you likely already have). In case it's not installed, you can [follow these instructions](https://github.com/nodesource/distributions#installation-instructions) for Debian-based systems. For other systems, please search on Google for instructions on how to install Node JS on your specific platform.
+=======
+**NOTE**: before building this emulator, ensure you have the Node JS environment installed (which you likely already have). In case it's not installed, you can [follow these instructions](https://github.com/nodesource/distributions#installation-instructions) for Debian-based systems. For other systems, please search on Google for instructions on how to install Node JS on your specific platform.
+>>>>>>> bcfdb95 (Improved logger)
 =======
 **NOTE**: before building this emulator, ensure you have the Node JS environment installed (which you likely already have). In case it's not installed, you can [follow these instructions](https://github.com/nodesource/distributions#installation-instructions) for Debian-based systems. For other systems, please search on Google for instructions on how to install Node JS on your specific platform.
 >>>>>>> 6df13be (Improved logger)
