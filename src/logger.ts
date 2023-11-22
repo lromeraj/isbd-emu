@@ -1,18 +1,16 @@
-import colors from "colors"
-import winston, { LeveledLogMethod, Logger } from "winston";
+import path from "path";
+import Colors from "colors";
+import winston, { Logger } from "winston";
 
 interface CustomLogger extends Logger {
-  success: LeveledLogMethod,
+//  success: LeveledLogMethod,
   setLevel: ( lvl: number | string ) => CustomLogger,
 }
 
-let programName = '';
-
-const levels: {
+export const levels: {
   [key: string]: number
 } = {
-  error:    0,
-  success:  1,
+  error:    1,
   warn:     2,
   info:     3,
   debug:    4,
@@ -21,24 +19,22 @@ const levels: {
 const levelFormat: {
   [key: string]: string
 } = {
-  "error":    `[ ${colors.bold.red("ER")} ]`,
-  "info":     `[${colors.bold.blue("INFO")}]`,
-  "warn":     `[${colors.bold.yellow("WARN")}]`,
-  "success":  `[ ${colors.bold.green("OK")} ]`,
-  "debug":    `[${colors.bold.magenta("DBUG")}]`,
+  "error":    `[${Colors.bold.red("ERR")}]`,
+  "info":     `[${Colors.bold.blue("INF")}]`,
+  "warn":     `[${Colors.bold.yellow("WRN")}]`,
+  "debug":    `[${Colors.bold.magenta("DBG")}]`,
 }
 
 const consoleTransport = new winston.transports.Console({ 
-  stderrLevels: [ 'error', 'success', 'warn', 'info', 'debug' ] 
+  stderrLevels: [ 'error', 'warn', 'info', 'debug' ] 
 })
 
 const ttyConsoleTransport = new winston.transports.Console({
   stderrLevels: [ 'error' ] 
 })
 
-
 const logger = winston.createLogger({
-  level: 'debug',
+  level: 'info',
   levels,
   format: winston.format.combine(
     // winston.format.label({ label: 'immoliste' }),
@@ -55,27 +51,21 @@ const logger = winston.createLogger({
         timestamp, moduleName, level, message, ...args
       } = info;
       
-      let progNameFormat = '@';
-
-      if ( programName ) {
-        progNameFormat = `${ colors.bold( programName ) }`
-      }
+      // if ( programName ) {
+      //   progNameFormat = `${ colors.bold( programName ) }`
+      // }
 
       let moduleNameFormat = ''
 
-      if ( moduleName ) {
-        moduleNameFormat = `${ colors.magenta( moduleName ) }`
+      if ( moduleName && logger.level === 'debug' ) {
+        moduleNameFormat = ` ${ Colors.magenta( moduleName ) }:`
       }
 
-      return `${ 
-        timestamp 
-      } ${ 
+      return `${
         levelFormat[ level ] 
-      } ${ 
-        progNameFormat 
-      } ${ 
-        moduleNameFormat 
-      }: ${ message } ${
+      }${
+        moduleNameFormat
+      } ${ message } ${
           Object.keys( args ).length ? JSON.stringify( args, null, 2 ) : ''
       }`;
     
@@ -90,40 +80,36 @@ const logger = winston.createLogger({
 
 }) as CustomLogger;
 
-
 export function disableTTY() {
-  logger.remove( ttyConsoleTransport ).add( consoleTransport );
+  logger.remove( ttyConsoleTransport )
+		.add( consoleTransport );
   return logger;
 }
 
 export function setLevel( targetLevel: number | string ) {
   
-  let level = 'debug';
+  let strLevel = 'debug';
   
   if ( typeof targetLevel === 'string' ) {
-    level = targetLevel;
-  } else {    
+    strLevel = targetLevel;
+  } else {
     for ( let key in levels ) {
       if ( levels[ key ] === targetLevel ) {
-        level = key;
+        strLevel = key;
         break;
       }
     }
   }
 
-  logger.level = level;
+  logger.level = strLevel;
   
   return logger;
 }
 
-export function create( moduleName?: string ) {
+export function create( moduleName: string ) {
   return logger.child({
-    moduleName
+    moduleName: path.relative( __filename, moduleName )
   }) as CustomLogger;
-};
-
-export function setProgramName( name: string ) {
-  programName = name;
 };
 
 export default logger;

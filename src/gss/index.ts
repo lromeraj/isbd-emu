@@ -10,6 +10,8 @@ import { MTServer } from "./servers/mt";
 import { TCPTransport } from "./transport/tcp";
 import { IE_MO_CONFIRMATION_LEN, Message } from "./msg";
 
+const log = logger.create( __filename );
+
 interface SubscriberUnit {
   momsn: number;
   mtmsn: number;
@@ -17,8 +19,6 @@ interface SubscriberUnit {
   mtMessages: Message.MT[];
   sessionsQueue: queueAsPromised<Transport.SessionMessage>;
 }
-
-const log = logger.create( 'gss' );
 
 export class GSS {
 

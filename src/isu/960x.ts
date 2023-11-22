@@ -13,9 +13,11 @@ import {
   CMD_SBDWB, 
   CMD_SBDWT 
 } from "./commands";
-import { GSS } from "../gss";
 
+import { GSS } from "../gss";
 import * as sio from "socket.io-client";
+
+const log = logger.create( __filename );
 
 export interface ModemOptions {
 
@@ -43,8 +45,6 @@ interface CIEV {
   svca: number;
   sigq: number;
 };
-
-const log = logger.create( '960x' );
 
 // TODO: create a parent class named Modem and rename this to SBDModem
 export class Modem {
@@ -114,7 +114,6 @@ export class Modem {
     const uri = options.gss.uri 
       ? options.gss.uri
       : `ws://${ options.gss.host }:${ options.gss.port }`;
-
 
     this.momsn = 0;
     this.mtmsn = 0;

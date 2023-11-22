@@ -1,5 +1,5 @@
 import * as logger from "../logger"
-import colors, { underline } from "colors";
+import Colors from "colors";
 import { SerialPort } from "serialport";
 import { ATCmd } from "./cmd";
 
@@ -17,7 +17,7 @@ enum ATIStatus {
   PROCESSING,
 };
 
-const log = logger.create( 'at-interface' );
+const log = logger.create( __filename );
 
 // TODO: rename to AT Server ...
 export class ATInterface {
@@ -49,14 +49,19 @@ export class ATInterface {
     this.enqueuedLines = {}
 
     this.sp = new SerialPort({ 
-      path: serialPortOpts.path || '/dev/null', 
+      path: serialPortOpts.path || '/tmp/tty', 
       baudRate: serialPortOpts.baudRate || 115200,
       autoOpen: typeof serialPortOpts.path === 'string',
     }, err => {
+
       if ( err ) {
-        log.error( err.message )
+        log.error( `AT interface failed on ${ 
+					Colors.red( this.sp.path ) 
+				}: ${ err.message }` );
       } else {
-        log.success( `AT Interface ready` );
+        log.info( `AT interface ready on ${ 
+					Colors.yellow( this.sp.path ) 
+				}` );
       }
     });
 
@@ -167,9 +172,9 @@ export class ATInterface {
       if ( promise ) {
         
         log.debug( `Processing command: [${
-          colors.bold.cyan( cmd.fqn.toUpperCase() )
+          Colors.bold.cyan( cmd.fqn.toUpperCase() )
         }] ${
-          colors.blue( this.escapeLine( atCmdStr ) )
+          Colors.blue( this.escapeLine( atCmdStr ) )
         }` )
 
         promise.then( str => {
@@ -199,7 +204,7 @@ export class ATInterface {
     }
 
     log.error( `Unknown command: ${
-      colors.red( this.escapeLine( atCmdStr ) )
+      Colors.red( this.escapeLine( atCmdStr ) )
     }` )
 
     this.status = ATIStatus.WAITING;
@@ -267,7 +272,7 @@ export class ATInterface {
   writeLine( line: string ) {
 
     log.debug( `Writing line: ${ 
-      colors.blue( this.escapeLine( line ) ) 
+      Colors.blue( this.escapeLine( line ) ) 
     }` )
 
     this.writeRaw( Buffer.from( 

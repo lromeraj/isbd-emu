@@ -48,44 +48,36 @@ The core of this emulator is also exposed in order to be reused for more specifi
 > **NOTE**: currently, there is no documentation available for core utils. Depending on how useful this emulator is for the community, I will consider adding extra documentation for that purpose. 
 
 # Building the emulator
-Before building this emulator you'll need to install `NodeJS` environment (which you probably have already installed) but in case you don't, you can simply do:
 
-> **NOTE**: the following instructions assume you are working from Ubuntu. If you need specific instructions for your OS, search in Google how to install `Node JS v16.x`.
+**NOTE**: before building this emulator, ensure you have the Node JS environment installed (which you likely already have). In case it's not installed, you can [follow these instructions](https://github.com/nodesource/distributions#installation-instructions) for Debian-based systems. For other systems, please search on Google for instructions on how to install Node JS on your specific platform.
 
+If `node` and `npm` are accessible from your path, now you can install all required dependencies:
 ``` bash
-curl -sL https://deb.nodesource.com/setup_16.x -o nodesource_setup.sh
+npm install
 ```
 
-If you don't feel comfortable with a direct "blind" install, please check the content:
+After install succeeds, build all application scripts with the following command:
 ``` bash
-nano nodesource_setup.sh
+npm run build
 ```
 
-Finally install it:
-``` bash
-sudo bash nodesource_setup.sh
-```
-
-If `node` and `npm` are accesible from your path, now you can build the entire project by going to the root of this repository and executing:
-``` bash
-npm i
-```
-Thats all. Now, the symlinks named `gss.js` and `960x.js` should be pointing to a valid JavaScript file inside the `build/` directory.
+Thats all. Now, under the `exe/` directory all symlinks should be pointing to a valid JavaScript file inside the `build/` directory.
 
 If you want to run those scripts simply tell `node` to execute them, like:
 ``` bash
-node gss.js
+node exe/gss.js
 ```
 
 For more details, see [how to run the emulator](#running-the-emulator).
 
 # Setting up the environment
-Apart from the emulator itself, this repository also includes additional _CLI_ tools as you'll see in the following sections, so, instead of having to specify the full path of the different scripts or making additional installation steps, you can use the `isbd-env.sh` script located in the root of this repository to load all required environment variables and bash completions. Use the following command to load the Iridium SBD environment:
+Apart from the emulator itself, this repository also contains additional _CLI_ tools, as detailed in the following sections. Instead of specifying the full path for various scripts or undergoing additional installation steps, utilize the `isbd-env.sh` script found at the repository's root to load all necessary environment variables and bash completions. Execute the following command to load the Iridium SBD environment:
+
 ``` bash
 source isbd-env.sh
 ```
 
-> **NOTE**: if you want to avoid to load the environment each time you open a new terminal, you can use `.bashrc` file located in the home directory of your current user and automatically load the Iridium SBD environment.
+> **NOTE**: to avoid loading the environment each time you open a new terminal, you can utilize the `.bashrc` file located in the home directory of your current user. This allows for the automatic loading of the Iridium SBD environment.
 
 Now you should be able to execute things like:
 ``` bash
@@ -116,13 +108,14 @@ Usage: 960x [options]
 A simple emulator for Iridium SBD 960X transceivers
 
 Options:
-  -V, --version        output the version number
-  -p, --path <string>  serial port path
-  -i, --imei <string>  set ISU IMEI (default: "527695889002193")
-  --gss-host <string>  GSS Socket host (default: "localhost")
-  --gss-port <string>  GSS Socket port (default: 10801)
-  --gss-uri <string>   GSS Socket URI
-  -h, --help           display help for command
+  -V, --version             output the version number
+  -l, --log-level <number>  Set logging level: 1, 2, 3, 4 (default: 3)
+  -d, --device <string>     Serial port path
+  --imei <string>           Configure custom IMEI (default: "527695889002193")
+  --gss-host <string>       GSS Socket host (default: "localhost")
+  --gss-port <string>       GSS Socket port (default: 10802)
+  --gss-uri <string>        GSS Socket URI
+  -h, --help                display help for command
 ```
 
 To finally run the `960x.js` emulator you need to create a virtual serial port in order to communicate with it, you can use `socat` to achieve that:
@@ -133,7 +126,7 @@ socat -dd pty,link=/tmp/tty,raw,echo=0 pty,link=/tmp/960x,raw,echo=0
 
 Leave this executing in the foreground or in a different terminal. Now you can execute:
 ``` bash
-isbd 960x -vvv -p /tmp/960x
+isbd 960x -l4 -d /tmp/960x
 ```
 
 You should see an output like:
@@ -203,7 +196,7 @@ Options:
 
 If you want to setup _MO_ transport as _SMTP_ you'll have to specify (at least): `--mo-smtp-host` and `--mo-smtp-user` options:
 ``` bash
-isbd gss -vvv \
+isbd gss -l4 \
   --mo-smtp-host smtp.domain.com \
   --mo-smtp-user your@email.com
 ```
@@ -213,7 +206,7 @@ isbd gss -vvv \
 
 If you want to use the _MO_ transport as _TCP_, you'll need a running instance of [Iridium Direct IP compatible server](https://github.com/lromeraj/isbd-server). The required option to enable _TCP_ transport is `--mo-tcp-host`, the port is `10801` by default. For example:
 ``` bash
-isbd gss -vvv \
+isbd gss -l4 \
   --mo-tcp-host localhost \
   --mo-tcp-port 10801
 ```
@@ -228,7 +221,7 @@ Currently you can achieve the same, but requires a few extra steps:
 
 Now you can execute the Iridium GSS using Gmail's _SMTP_:
 ``` bash
-isbd gss -vvv \
+isbd gss -l4 \
   --mo-smtp-host smtp.gmail.com \
   --mo-smtp-user example@gmail.com \
   --mo-smtp-password XXXXXXXXXXXXXXXX

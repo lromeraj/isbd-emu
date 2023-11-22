@@ -10,7 +10,7 @@ import EventEmitter from "events";
 import * as logger from "../../../logger";
 import { GSS } from "../..";
 
-const log = logger.create( 'isu-server' );
+const log = logger.create( __filename );
 
 // https://stackoverflow.com/a/39145058
 // export declare interface SUServer {
@@ -48,7 +48,7 @@ export class ISUServer extends EventEmitter {
     this.socketServer = new sio.Server( this.httpServer );
 
     this.httpServer.listen( options.port, () => {
-      log.success( `ISU server ready, port: ${
+      log.info( `ISU server ready, port: ${
         colors.yellow( options.port.toString() )
       }` );
     })
