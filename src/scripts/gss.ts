@@ -92,7 +92,7 @@ async function main() {
   } else {
 
     if ( tcpTransport ) {
-      log.info( `Using MO TCP transport ${
+      log.info( `Using MO TCP transport: ${
         colors.green( opts.moTcpHost )
       }:${
         colors.yellow( opts.moTcpPort )
@@ -100,7 +100,7 @@ async function main() {
     }
 
     if ( smtpTransport ) {
-      log.info( `Using MO SMTP transport ${
+      log.info( `Using MO SMTP transport: ${
         colors.green( opts.moSmtpHost )
       }:${
         colors.yellow( opts.moSmtpPort )
